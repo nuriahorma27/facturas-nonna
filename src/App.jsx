@@ -23,7 +23,7 @@ async function subirADrive(file, trimestre, anyo) {
       r.readAsDataURL(file);
     });
 
-    const resp = await fetch("/.netlify/functions/ai-extract", {
+    const resp = await fetch("/api/ai-extract", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -329,7 +329,7 @@ async function extractWithAI(file) {
 tipo: gasto|ingreso. categoria: Telas y materiales|Transporte y envíos|Marketing y publicidad|Equipamiento y maquinaria|Servicios externos|Nóminas|Alquiler|Suministros|Otros. estado: pagada|pendiente.`;
 
   const endpoint = typeof window !== "undefined" && window.location.hostname !== "localhost"
-    ? "/.netlify/functions/ai-extract"
+    ? "/api/ai-extract"
     : "https://api.anthropic.com/v1/messages";
 
   const res = await fetch(endpoint, {
