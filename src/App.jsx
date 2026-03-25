@@ -11,7 +11,6 @@ const _sb = createClient(
 async function db() { return _sb; }
 
 // ── Google Drive via Apps Script ─────────────────────────────
-// Pega aquí la URL de tu Apps Script desplegado (ver instrucciones)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbnPxfeex7bGuZomB3UcJNAzuSeHLu1oI1BF4AFT0I0gXB71G9Lnhr6GjydZMAx0lliw/exec";
 
 async function subirADrive(file, trimestre, anyo) {
@@ -23,24 +22,27 @@ async function subirADrive(file, trimestre, anyo) {
       r.onerror = rej;
       r.readAsDataURL(file);
     });
+
+    const formData = new FormData();
+    formData.append('file', base64);
+    formData.append('nombre', file.name);
+    formData.append('mimeType', file.type || 'application/octet-stream');
+    formData.append('trimestre', trimestre);
+    formData.append('anyo', String(anyo));
+
     const resp = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        file: base64,
-        nombre: file.name,
-        mimeType: file.type || "application/octet-stream",
-        trimestre,
-        anyo,
-      }),
+      method: 'POST',
+      body: formData
     });
+
     const data = await resp.json();
-    return data.ok ? data.url : null;
+    return data.success ? data.url : null;
   } catch(e) {
     console.warn("Drive upload failed:", e.message);
     return null;
   }
 }
+
 const CATS = ["Telas y materiales","Transporte y envíos","Marketing y publicidad","Equipamiento y maquinaria","Servicios externos","Nóminas","Alquiler","Suministros","Otros"];
 const CAT_COLORS = ["#B8962E","#C4A882","#8B6914","#D4AF5A","#5C4A2A","#9C8E7A","#7A6A50","#D4C5A9","#E8DFC8"];
 const fmt  = (n) => Number(n).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
@@ -58,7 +60,6 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* Layout */
 .app{display:flex;min-height:100vh}
 .sidebar{width:220px;background:#2C2417;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh}
 .sb-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -75,13 +76,11 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .main{flex:1;overflow:auto;background:#EDE5D0}
 .view{padding:48px 44px;animation:fadeUp .5s ease both}
 
-/* Tipografía compartida */
 .eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#B8962E;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 .eyebrow::before{content:'';width:20px;height:.5px;background:#B8962E}
 .view-title{font-size:34px;font-weight:300;margin-bottom:32px}
 .view-title em{font-style:italic;color:#8B6914}
 
-/* Botones */
 .btn-ink{padding:11px 26px;background:#2C2417;border:none;font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#F5F0E8;cursor:pointer;position:relative;overflow:hidden;transition:letter-spacing .3s;display:flex;align-items:center;gap:8px}
 .btn-ink::before{content:'';position:absolute;inset:0;background:#8B6914;transform:translateX(-100%);transition:transform .3s ease}
 .btn-ink:hover::before{transform:translateX(0)}
@@ -94,25 +93,20 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .btn-sm{padding:8px 18px;background:none;border:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#9C8E7A;cursor:pointer;transition:all .2s}
 .btn-sm:hover{border-color:#2C2417;color:#2C2417}
 
-/* Toast */
 .toast{position:fixed;bottom:28px;right:28px;padding:14px 22px;font-family:'Cormorant Garamond',serif;font-size:14px;z-index:9999;animation:fadeUp .3s ease both;min-width:200px}
 .toast-ok{background:#2C2417;color:#F5F0E8;border-left:3px solid #7BAE7F}
 .toast-err{background:#2C2417;color:#F5F0E8;border-left:3px solid #C25A4A}
 
-/* Spinner */
 .spin{width:18px;height:18px;border:2px solid #D4C5A9;border-top-color:#B8962E;border-radius:50%;animation:spin 1s linear infinite}
 
-/* Cards */
 .card{background:#F5F0E8;border:.5px solid #D4C5A9;padding:24px}
 .card:hover{box-shadow:0 6px 28px rgba(44,36,23,.07)}
 
-/* Pills resumen */
 .pills{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
 .pill{padding:7px 18px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border:.5px solid #D4C5A9;display:flex;align-items:center;gap:8px;background:#F5F0E8}
 .pill-dot{width:6px;height:6px;border-radius:50%}
 .pill-val{font-size:15px;font-weight:500;color:#2C2417}
 
-/* ── SUBIDA ──────── */
 .upload-zone{border:1.5px dashed #D4C5A9;background:#F5F0E8;padding:56px 40px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;margin-bottom:24px}
 .upload-zone:hover,.upload-zone.drag{border-color:#B8962E;background:#FAF7F0;box-shadow:0 6px 32px rgba(184,150,46,.1)}
 .up-icon{width:52px;height:52px;margin:0 auto 18px;border:1px solid #D4C5A9;display:flex;align-items:center;justify-content:center;transition:all .3s}
@@ -154,7 +148,6 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .rc-sel:hover{border-bottom-color:#D4C5A9}.rc-sel:focus{border-bottom-color:#B8962E}.rc-sel:disabled{color:#9C8E7A;cursor:default}
 .rc-act{padding:14px 18px;display:flex;gap:10px;justify-content:flex-end;border-top:.5px solid #D4C5A9}
 
-/* Badges compartidos */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;font-size:9px;letter-spacing:.15em;text-transform:uppercase}
 .badge-gasto{background:rgba(180,60,40,.07);color:#8B3A2A;border:.5px solid rgba(180,60,40,.2)}
 .badge-ingreso{background:rgba(91,138,94,.07);color:#3A6B3E;border:.5px solid rgba(91,138,94,.2)}
@@ -163,7 +156,6 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .e-dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px}
 .dot-pagada{background:#7BAE7F}.dot-pendiente{background:#B8962E}
 
-/* ── LISTADO ─────── */
 .fl-bar{background:#F5F0E8;border:.5px solid #D4C5A9;padding:18px 22px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
 .fg{display:flex;flex-direction:column;gap:5px;min-width:130px;flex:1}
 .fl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810}
@@ -200,7 +192,6 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .empty-row{padding:56px;text-align:center;color:#9C8E7A;font-style:italic;font-size:15px}
 .loading-row{padding:36px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px;color:#9C8E7A;font-style:italic}
 
-/* ── DASHBOARD ────── */
 .tabs{display:flex;background:#F5F0E8;border:.5px solid #D4C5A9;margin-bottom:0}
 .tab{padding:12px 26px;background:none;border:none;font-family:'Cormorant Garamond',serif;font-size:14px;letter-spacing:.15em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s;border-right:.5px solid #D4C5A9}
 .tab:last-child{border-right:none}
@@ -257,7 +248,6 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .ctt-row{display:flex;align-items:center;gap:7px;font-size:13px;color:#F5F0E8}
 .ctt-dot{width:6px;height:6px;border-radius:50%}
 
-/* ── EXPORTAR ────── */
 .exp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 22px;background:#F5F0E8;border:.5px solid #D4C5A9;margin-bottom:24px}
 .exp-lbl{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#5C4A2A;margin-right:4px}
 .scope-btn{padding:9px 18px;background:none;border:1px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s}
@@ -275,7 +265,6 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .sh-info{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:.5px solid #D4C5A9}
 .sh-tag{padding:4px 12px;border:.5px solid #D4C5A9;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#5C4A2A;display:flex;align-items:center;gap:6px}
 
-/* ── MODAL ────────── */
 .overlay{position:fixed;inset:0;background:rgba(44,36,23,.75);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(4px);animation:fadeIn .2s ease both}
 .modal{background:#F5F0E8;width:100%;max-width:840px;max-height:90vh;display:flex;flex-direction:column;animation:modalIn .3s ease both;box-shadow:0 20px 70px rgba(44,36,23,.35)}
 .modal-hd{padding:18px 26px;border-bottom:.5px solid #D4C5A9;display:flex;align-items:center;justify-content:space-between;background:#EDE5D0}
@@ -322,7 +311,6 @@ const I = {
   ok:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>,
   x:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12"/></svg>,
   pdf:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>,
-  img:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
   xl:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>,
   zip:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>,
 };
@@ -338,7 +326,6 @@ async function extractWithAI(file) {
 {"tipo":"gasto","fecha":"DD/MM/YYYY","numero_factura":"","proveedor_cliente":"","nif_cif":"","concepto":"","base_imponible":0,"iva_porcentaje":21,"iva_importe":0,"total":0,"categoria":"Otros","estado":"pendiente"}
 tipo: gasto|ingreso. categoria: Telas y materiales|Transporte y envíos|Marketing y publicidad|Equipamiento y maquinaria|Servicios externos|Nóminas|Alquiler|Suministros|Otros. estado: pagada|pendiente.`;
 
-  // Usa el proxy de Netlify Function para evitar CORS
   const endpoint = typeof window !== "undefined" && window.location.hostname !== "localhost"
     ? "/.netlify/functions/ai-extract"
     : "https://api.anthropic.com/v1/messages";
@@ -406,7 +393,6 @@ function buildExcel(facturas) {
   XLSX.writeFile(wb,"AtelierLaNonna_"+new Date().toISOString().slice(0,10)+".xlsx",{bookType:"xlsx",cellStyles:true});
 }
 
-// Mock data para preview cuando Supabase está vacío
 const MOCK = [
   {id:"1",tipo:"gasto",fecha:"15/01/2025",numero_factura:"F-2025-001",proveedor_cliente:"Tejidos Martínez S.L.",nif_cif:"B-12345678",base_imponible:1200,iva_porcentaje:21,iva_importe:252,total:1452,categoria:"Telas y materiales",estado:"pagada",trimestre:"T1",archivo_tipo:"pdf",archivo_nombre:"F-2025-001.pdf"},
   {id:"2",tipo:"gasto",fecha:"20/01/2025",numero_factura:"F-2025-002",proveedor_cliente:"MRW Express",nif_cif:"A-87654321",base_imponible:89.5,iva_porcentaje:21,iva_importe:18.8,total:108.3,categoria:"Transporte y envíos",estado:"pagada",trimestre:"T1",archivo_tipo:"pdf",archivo_nombre:"F-2025-002.pdf"},
@@ -458,21 +444,17 @@ function ViewSubida({ onSaved, toast }) {
       const tipo = item.file.type.startsWith("image")?"image":"pdf";
       const path = `${Date.now()}_${item.file.name.replace(/\s+/g,"_")}`;
 
-      // 1. Subir a Supabase Storage
       const {error:upErr} = await supa.storage.from("facturas").upload(path,item.file,{contentType:item.file.type,upsert:true});
       if(upErr) throw upErr;
       const {data:{publicUrl}} = supa.storage.from("facturas").getPublicUrl(path);
 
-      // 2. Calcular trimestre y año desde la fecha
       const fecha = data.fecha || "";
       const mes   = parseInt(fecha.split("/")[1]) || new Date().getMonth()+1;
       const anyo  = fecha.split("/")[2] || new Date().getFullYear().toString();
       const trimestre = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
 
-      // 3. Subir a Google Drive (en paralelo, no bloquea si falla)
       const driveUrl = await subirADrive(item.file, trimestre, anyo);
 
-      // 4. Guardar en Supabase BD
       const {error:dbErr} = await supa.from("facturas").insert([{
         ...data,
         base_imponible: Number(data.base_imponible)||0,
@@ -482,6 +464,7 @@ function ViewSubida({ onSaved, toast }) {
         archivo_nombre: item.file.name,
         archivo_url:    publicUrl,
         archivo_tipo:   tipo,
+        trimestre,
         drive_url:      driveUrl || null,
       }]);
       if(dbErr) throw dbErr;
@@ -490,7 +473,7 @@ function ViewSubida({ onSaved, toast }) {
       setFiles(p=>p.map(f=>f.id===item.id?{...f,status:"done"}:f));
 
       if(driveUrl) toast(`Guardado en Supabase y Drive (${trimestre} ${anyo}) ✓`);
-      else         toast("Guardado en Supabase ✓" + (APPS_SCRIPT_URL==="PEGA_AQUI_TU_URL_DE_APPS_SCRIPT" ? " — configura Apps Script para Drive" : ""));
+      else toast("Guardado en Supabase ✓");
 
       onSaved();
     } catch(e) {
@@ -630,7 +613,6 @@ function ViewListado({ facturas, loading, onRefresh, toast }) {
   };
 
   const downloadFile=(f)=>{ if(f.archivo_url)window.open(f.archivo_url,"_blank"); else window.alert("Sin archivo adjunto."); };
-
   const exportExcel=()=>{setExporting(true);try{buildExcel(facturas);}catch(e){window.alert("Error: "+e.message);}setExporting(false);};
 
   const tG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
@@ -760,13 +742,12 @@ function ViewDashboard({ facturas }) {
   const ivaN=ivaR-ivaS;
   const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente");
 
-  // Datos gráfica barras desde facturas reales si hay, si no mock
   const chartData = useMemo(()=>{
     const meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
     if(periodo==="mensual"){
       return meses.map((mes,i)=>{
-        const g=facturas.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===i+1&&f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0)||MOCK_2024[i].g*0;
-        const iv=facturas.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===i+1&&f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0)||MOCK_2024[i].i*0;
+        const g=facturas.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===i+1&&f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
+        const iv=facturas.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===i+1&&f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
         return {mes, gastos:g||MOCK_2024[i].g, ingresos:iv||MOCK_2024[i].i, gastos24:MOCK_2024[i].g, ingresos24:MOCK_2024[i].i};
       });
     }
@@ -1042,12 +1023,12 @@ function ViewExportar({ facturas, toast }) {
               <tbody>
                 {prevData.slice(0,8).map((f,i)=>(
                   <tr key={i}>
-                    <td style={{textAlign:"left"}}><span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span></td>
-                    <td style={{textAlign:"left"}}>{f.fecha}</td>
-                    <td style={{textAlign:"left",color:"#9C8E7A",fontSize:12}}>{f.numero_factura}</td>
-                    <td style={{textAlign:"left",fontWeight:500}}>{f.proveedor_cliente}</td>
+                    <td><span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span></td>
+                    <td>{f.fecha}</td>
+                    <td style={{color:"#9C8E7A",fontSize:12}}>{f.numero_factura}</td>
+                    <td style={{fontWeight:500}}>{f.proveedor_cliente}</td>
                     <td style={{color:f.tipo==="ingreso"?"#3A6B3E":"#8B3A2A",fontWeight:500}}>{fmt(f.total)}</td>
-                    <td style={{textAlign:"left",fontSize:12}}>{f.categoria}</td>
+                    <td style={{fontSize:12}}>{f.categoria}</td>
                     <td style={{color:f.estado==="pagada"?"#3A6B3E":"#8B6914"}}>{f.estado==="pagada"?"✓ Pagada":"⏳ Pendiente"}</td>
                   </tr>
                 ))}
@@ -1088,7 +1069,6 @@ export default function AtelierApp() {
       if(error) throw error;
       setFacturas(data||[]);
     } catch(e) {
-      // Si falla Supabase, usa mock data para preview
       setFacturas([]);
     }
     setLoading(false);
@@ -1097,17 +1077,16 @@ export default function AtelierApp() {
   useEffect(()=>{ cargar(); },[cargar]);
 
   const NAV = [
-    {id:"subida",  label:"Subir facturas", icon:I.upload},
-    {id:"listado", label:"Listado",         icon:I.list},
-    {id:"dashboard",label:"Dashboard",     icon:I.dash},
-    {id:"exportar",label:"Exportar",        icon:I.export},
+    {id:"subida",   label:"Subir facturas", icon:I.upload},
+    {id:"listado",  label:"Listado",         icon:I.list},
+    {id:"dashboard",label:"Dashboard",       icon:I.dash},
+    {id:"exportar", label:"Exportar",        icon:I.export},
   ];
 
   return (
     <>
       <style>{CSS}</style>
       <div className="app">
-        {/* Sidebar */}
         <aside className="sidebar">
           <div className="sb-logo">
             <div className="sb-mono">N</div>
@@ -1123,16 +1102,13 @@ export default function AtelierApp() {
           </nav>
           <div className="sb-footer"><span className="sb-dot"/>Supabase conectado</div>
         </aside>
-
-        {/* Contenido principal */}
         <main className="main">
-          {vista==="subida"   && <ViewSubida   onSaved={cargar} toast={showToast}/>}
-          {vista==="listado"  && <ViewListado  facturas={facturas} loading={loading} onRefresh={cargar} toast={showToast}/>}
-          {vista==="dashboard"&& <ViewDashboard facturas={facturas}/>}
-          {vista==="exportar" && <ViewExportar  facturas={facturas} toast={showToast}/>}
+          {vista==="subida"    && <ViewSubida    onSaved={cargar} toast={showToast}/>}
+          {vista==="listado"   && <ViewListado   facturas={facturas} loading={loading} onRefresh={cargar} toast={showToast}/>}
+          {vista==="dashboard" && <ViewDashboard facturas={facturas}/>}
+          {vista==="exportar"  && <ViewExportar  facturas={facturas} toast={showToast}/>}
         </main>
       </div>
-
       {toast&&<div className={"toast toast-"+toast.type}>{toast.msg}</div>}
     </>
   );
