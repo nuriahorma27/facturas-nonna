@@ -23,19 +23,22 @@ async function subirADrive(file, trimestre, anyo) {
       r.readAsDataURL(file);
     });
 
-    const formData = new FormData();
-    formData.append('file', base64);
-    formData.append('nombre', file.name);
-    formData.append('mimeType', file.type || 'application/octet-stream');
-    formData.append('trimestre', trimestre);
-    formData.append('anyo', String(anyo));
-
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: formData
+    const resp = await fetch("/.netlify/functions/ai-extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "drive-upload",
+        appsScriptUrl: APPS_SCRIPT_URL,
+        file: base64,
+        nombre: file.name,
+        mimeType: file.type || "application/octet-stream",
+        trimestre,
+        anyo,
+      }),
     });
-    return true;
+
+    const data = await resp.json();
+    return data.success ? true : null;
   } catch(e) {
     console.warn("Drive upload failed:", e.message);
     return null;
