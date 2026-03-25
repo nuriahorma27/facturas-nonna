@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { createClient } from "@supabase/supabase-js";
 const _sb = createClient(
   "https://jtqfxakabthzakmhncrw.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0cWZ4YWthYnRoemFrbWhuY3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDEwNTAsImV4cCI6MjA4OTg3NzA1MH0.LF4zwnRxhUojv7P7dQRKSsPz9gmkoV1PXBGOggwG-yA"
+  "sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p"
 );
 async function db() { return _sb; }
 
