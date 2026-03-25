@@ -1400,7 +1400,14 @@ function ViewDashboard({ facturas, historico }) {
               <Pie data={catData} cx="50%" cy="50%" innerRadius="42%" outerRadius="72%" paddingAngle={3} dataKey="value">
                 {catData.map((_,i)=><Cell key={i} fill={CAT_COLORS[i%CAT_COLORS.length]}/>)}
               </Pie>
-              <Tooltip formatter={(v,n)=>[fmt(v),n]} contentStyle={{fontFamily:"'Cormorant Garamond',Georgia,serif",background:"#F5F0E8",border:".5px solid #B8962E",color:"#2C2417",fontSize:15,borderRadius:0,boxShadow:"0 4px 16px rgba(44,36,23,.15)"}} itemStyle={{color:"#2C2417"}} labelStyle={{color:"#8B6914",fontSize:13,letterSpacing:".1em",textTransform:"uppercase"}}/>
+              <Tooltip content={({active,payload})=>{
+                if(!active||!payload?.length) return null;
+                const p=payload[0];
+                return <div style={{background:"#F5F0E8",border:".5px solid #B8962E",padding:"10px 14px",fontFamily:"'Cormorant Garamond',Georgia,serif",boxShadow:"0 4px 16px rgba(44,36,23,.15)"}}>
+                  <div style={{fontSize:13,letterSpacing:".1em",textTransform:"uppercase",color:"#8B6914",marginBottom:4}}>{p.name}</div>
+                  <div style={{fontSize:16,fontWeight:500,color:"#2C2417"}}>{fmt(p.value)}</div>
+                </div>;
+              }}/>
             </PieChart>
           </ResponsiveContainer>
           <div style={{display:"flex",flexWrap:"wrap",gap:"5px 14px",marginTop:8}}>
