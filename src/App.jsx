@@ -143,10 +143,10 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .rc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
 .rc-f{padding:13px 18px;border-right:.5px solid #D4C5A9;border-bottom:.5px solid #D4C5A9}
 .rc-f:last-child{border-right:none}
-.rc-lbl{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9C8E7A;margin-bottom:5px}
-.rc-inp{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:1px 0;transition:border-color .2s}
+.rc-lbl{font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#5C4A2A;margin-bottom:6px}
+.rc-inp{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-family:'Cormorant Garamond',serif;font-size:18px;color:#2C2417;outline:none;padding:3px 0;transition:border-color .2s}
 .rc-inp:hover{border-bottom-color:#D4C5A9}.rc-inp:focus{border-bottom-color:#B8962E}.rc-inp:disabled{color:#9C8E7A}
-.rc-sel{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:1px 0;-webkit-appearance:none;cursor:pointer;transition:border-color .2s}
+.rc-sel{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-family:'Cormorant Garamond',serif;font-size:18px;color:#2C2417;outline:none;padding:3px 0;-webkit-appearance:none;cursor:pointer;transition:border-color .2s}
 .rc-sel:hover{border-bottom-color:#D4C5A9}.rc-sel:focus{border-bottom-color:#B8962E}.rc-sel:disabled{color:#9C8E7A;cursor:default}
 .rc-act{padding:14px 18px;display:flex;gap:10px;justify-content:flex-end;border-top:.5px solid #D4C5A9}
 
@@ -688,64 +688,277 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
     return [...set].sort((a,b)=>b-a);
   },[historico,_anyoActual]);
 
-  // Parsear Excel histórico
+  // Parsear Excel histórico — compatible con formato Atelier La Nonna
   const importarExcel = async(e) => {
     const file = e.target.files[0];
     if(!file) return;
     setImportando(true);
     try {
       const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, {type:"array"});
+      const wb = XLSX.read(buf, {type:"array", cellDates:true, raw:false});
       const nuevas = [];
+
+      const parseFecha = (v) => {
+        if(!v) return "";
+        if(v instanceof Date) {
+          const d = String(v.getDate()).padStart(2,"0");
+          const m = String(v.getMonth()+1).padStart(2,"0");
+          const y = v.getFullYear();
+          return `${d}/${m}/${y}`;
+        }
+        const s = String(v).trim();
+        // Intentar parsear fechas en formato "DD/MM/YYYY" o similar
+        const match = s.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+        if(match) return `${match[1].padStart(2,"0")}/${match[2].padStart(2,"0")}/${match[3].length===2?"20"+match[3]:match[3]}`;
+        return s;
+      };
+
+      const parseNum = (v) => {
+        if(v===null||v===undefined||v==="") return 0;
+        if(typeof v==="number") return Math.round(v*100)/100;
+        const s = String(v).replace(/[^\d.,\-]/g,"").replace(",",".");
+        return Math.round((parseFloat(s)||0)*100)/100;
+      };
+
+      const getAnyo = (f) => { const m=f.match(/\d{4}/); return m?m[0]:new Date().getFullYear().toString(); };
+      const getMes  = (f) => { const m=f.match(/\d{1,2}\/(\d{1,2})\//); return m?parseInt(m[1]):0; };
+      const getTrim = (m) => m<=3?"T1":m<=6?"T2":m<=9?"T3":"T4";
+
       wb.SheetNames.forEach(sheetName => {
         const ws = wb.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
-        rows.forEach((row, idx) => {
-          const keys = Object.keys(row).map(k=>k.toLowerCase().trim());
-          const get = (...names) => {
-            for(const n of names) {
-              const k = Object.keys(row).find(k=>k.toLowerCase().includes(n));
-              if(k && row[k]!=="") return String(row[k]).trim();
-            }
-            return "";
-          };
-          const total = parseFloat(get("total","importe","amount").replace(/[^0-9.,]/g,"").replace(",",".")) || 0;
-          const base  = parseFloat(get("base").replace(/[^0-9.,]/g,"").replace(",",".")) || 0;
-          const iva   = parseFloat(get("iva","cuota").replace(/[^0-9.,]/g,"").replace(",",".")) || 0;
-          const fecha = get("fecha","date","f.");
-          let anyo = "";
-          let mes = 0;
-          // Detectar año de la fecha o del nombre de la hoja
-          const matchAnyo = (fecha+" "+sheetName).match(/20\d{2}/);
-          if(matchAnyo) anyo = matchAnyo[0];
-          const matchMes = fecha.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.]/);
-          if(matchMes) mes = parseInt(matchMes[2]) || parseInt(matchMes[1]) || 0;
-          const trim = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
-          if(total===0 && !get("proveedor","cliente","nombre","empresa","razón")) return;
+        if(!ws || !ws["!ref"]) return;
+        const sheetLower = sheetName.toLowerCase().replace(/\./g,"").trim();
+        const tipoHoja = sheetLower.includes("ingreso") ? "ingreso" : "gasto";
+
+        // Obtener todas las filas como arrays
+        const allRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:false, dateNF:"DD/MM/YYYY"});
+
+        // Buscar fila de cabecera: primera que tenga al menos 3 celdas con texto
+        // y que contenga palabras clave de cabecera
+        let headerRowIdx = -1;
+        let colFecha=-1, colProveedor=-1, colNfactura=-1, colTotal=-1, colIva=-1, colBase=-1;
+
+        for(let i=0; i<Math.min(allRows.length,25); i++) {
+          const row = allRows[i];
+          if(!row) continue;
+          const textCells = row.filter(c=>c&&typeof c==="string"&&c.trim().length>2);
+          if(textCells.length < 2) continue;
+          const rowStr = row.map(c=>c?String(c).toLowerCase():"").join("|");
+          const isHeader = (rowStr.includes("fecha")&&(rowStr.includes("importe")||rowStr.includes("emisor")||rowStr.includes("proveedor")||rowStr.includes("nº")||rowStr.includes("numero")));
+          if(isHeader) {
+            headerRowIdx = i;
+            row.forEach((cell, ci) => {
+              if(!cell) return;
+              const c = String(cell).toLowerCase().trim();
+              if((c.includes("fecha factura")||c==="fecha")&&colFecha===-1) colFecha=ci;
+              if((c.includes("emisora")||c.includes("proveedor")||c.includes("destinat")||c.includes("pedido")||c.includes("cliente"))&&colProveedor===-1) colProveedor=ci;
+              if((c.includes("número factura")||c.includes("nº factura")||c.includes("número")||c.includes("nº")||c.includes("factura"))&&colNfactura===-1) colNfactura=ci;
+              if((c.includes("importe total")||c.includes("importe iva")||(c.includes("importe")&&!c.includes("neto")))&&colTotal===-1) colTotal=ci;
+              if(c==="iva"&&colIva===-1) colIva=ci;
+              if((c.includes("neto")||c.includes("base"))&&colBase===-1) colBase=ci;
+            });
+            break;
+          }
+        }
+
+        if(headerRowIdx===-1) {
+          console.warn("No se encontró cabecera en hoja:", sheetName);
+          return;
+        }
+
+        // Leer datos desde la fila siguiente a la cabecera
+        for(let i=headerRowIdx+1; i<allRows.length; i++) {
+          const row = allRows[i];
+          if(!row) continue;
+
+          const totalVal = parseNum(colTotal>=0 ? row[colTotal] : null);
+          if(totalVal===0) continue;
+
+          const fechaRaw = colFecha>=0 ? row[colFecha] : null;
+          if(!fechaRaw) continue;
+          const fechaStr = parseFecha(fechaRaw);
+          const anyo = getAnyo(fechaStr);
+          if(!anyo||anyo==="NaN"||parseInt(anyo)<2020) continue;
+
+          const mes = getMes(fechaStr);
+          const ivaVal  = parseNum(colIva>=0 ? row[colIva] : null);
+          const baseVal = colBase>=0 ? parseNum(row[colBase]) : 0;
+          const baseCalc = baseVal || (totalVal>0&&ivaVal>0 ? Math.round((totalVal-ivaVal)*100)/100 : Math.round(totalVal/1.21*100)/100);
+          const ivaCalc  = ivaVal  || Math.round((totalVal-baseCalc)*100)/100;
+
+          const provStr = colProveedor>=0 && row[colProveedor] ? String(row[colProveedor]).trim() : "";
+          const nfact   = colNfactura>=0 && row[colNfactura]  ? String(row[colNfactura]).trim()  : "";
+
           nuevas.push({
-            id: "hist_"+Date.now()+"_"+idx,
+            id: "hist_"+Date.now()+"_"+i+"_"+Math.random().toString(36).slice(2,6),
             _historico: true,
             _anyo: anyo,
-            tipo: get("tipo","type").toLowerCase().includes("ingreso")?"ingreso":"gasto",
-            fecha,
-            numero_factura: get("factura","número","nº","ref","n.","num"),
-            proveedor_cliente: get("proveedor","cliente","nombre","empresa","razón social"),
-            nif_cif: get("nif","cif","vat"),
-            concepto: get("concepto","descripción","description"),
-            base_imponible: base || (total>0&&iva>0? Math.round((total-iva)*100)/100 : Math.round(total/1.21*100)/100),
+            _origen: file.name,
+            tipo: tipoHoja,
+            fecha: fechaStr,
+            numero_factura: nfact,
+            proveedor_cliente: provStr || (tipoHoja==="ingreso"?"Cliente":"Proveedor"),
+            nif_cif: "",
+            concepto: "",
+            base_imponible: baseCalc,
             iva_porcentaje: 21,
-            iva_importe: iva || (total>0? Math.round((total - (total/1.21))*100)/100 : 0),
-            total,
-            categoria: get("categoria","categoría","category") || "Otros",
-            estado: get("estado","pagado","paid").toLowerCase().includes("pend")?"pendiente":"pagada",
-            trimestre: trim,
+            iva_importe: ivaCalc,
+            total: totalVal,
+            categoria: tipoHoja==="ingreso" ? "Servicios externos" : "Otros",
+            estado: "pagada",
+            trimestre: getTrim(mes),
             archivo_nombre: file.name,
             archivo_url: null,
             archivo_tipo: "excel",
           });
-        });
+        }
       });
-      const merged = [...historico.filter(f=>f._origen!==file.name),...nuevas.map(f=>({...f,_origen:file.name}))];
+
+      if(nuevas.length===0) {
+        toast("No se encontraron datos. Verifica que el Excel tiene hojas GASTOS/INGRESOS con cabeceras en las primeras 25 filas.","err");
+        setImportando(false);
+        e.target.value="";
+        return;
+      }
+
+      const merged = [...historico.filter(f=>f._origen!==file.name),...nuevas];
+      setHistorico(merged);
+      await guardarHistorico(merged);
+      toast(`Importadas ${nuevas.length} filas de ${file.name} ✓`);
+    } catch(err) {
+      toast("Error al leer el Excel: "+err.message,"err");
+    }
+    setImportando(false);
+    e.target.value="";
+  };
+
+      const parseNum = (v) => {
+        if(v===null||v===undefined||v==="") return 0;
+        if(typeof v==="number") return Math.round(v*100)/100;
+        return parseFloat(String(v).replace(/[^0-9.,\-]/g,"").replace(",",".")) || 0;
+      };
+
+      const getAnyo = (fechaStr) => {
+        const m = fechaStr.match(/\d{4}/);
+        return m ? m[0] : new Date().getFullYear().toString();
+      };
+      const getMes = (fechaStr) => {
+        const m = fechaStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        return m ? parseInt(m[2]) : 0;
+      };
+      const getTrim = (mes) => mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
+
+      wb.SheetNames.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
+        const sheetLower = sheetName.toLowerCase().replace(".","").trim();
+        const tipoHoja = sheetLower.includes("ingreso") ? "ingreso" : "gasto";
+
+        // Intentar leer con el formato específico de Atelier La Nonna
+        // GASTOS: col B=Nº, D=Emisora/Proveedor, E=Fecha Factura, F=Nº Factura, H=Importe Total, I=IVA
+        // INGRESOS: col B=Nº factura, C=Pedido, D=Fecha, E=Importe IVA incluido, F=Importe neto
+        const range = XLSX.utils.decode_range(ws["!ref"] || "A1:Z100");
+        
+        // Buscar fila de cabecera (la que tenga "fecha" o "importe" o "nº")
+        let headerRow = -1;
+        let colMap = {};
+        for(let r=range.s.r; r<=Math.min(range.e.r, 20); r++) {
+          const rowVals = [];
+          for(let c=range.s.c; c<=range.e.c; c++) {
+            const cell = ws[XLSX.utils.encode_cell({r,c})];
+            rowVals.push({c, v: cell ? String(cell.v||"").toLowerCase().trim() : ""});
+          }
+          const hasHeader = rowVals.some(({v})=>v.includes("fecha")||v.includes("importe")||v.includes("nº")||v.includes("número")||v.includes("destinatario")||v.includes("emisor"));
+          if(hasHeader) {
+            headerRow = r;
+            rowVals.forEach(({c,v})=>{
+              if(v.includes("fecha factura")||v==="fecha") colMap.fecha=c;
+              if(v.includes("número factura")||v.includes("nº factura")||v.includes("nº")||v.includes("número")) {
+                if(colMap.nfactura===undefined) colMap.nfactura=c;
+              }
+              if(v.includes("emisor")||v.includes("destinat")||v.includes("proveedor")||v.includes("cliente")||v.includes("pedido")) {
+                if(colMap.proveedor===undefined) colMap.proveedor=c;
+              }
+              if(v.includes("importe total")||v.includes("importe iva")||(v.includes("importe")&&!v.includes("neto"))) {
+                if(colMap.total===undefined) colMap.total=c;
+              }
+              if(v.includes("iva")&&!v.includes("neto")&&!v.includes("incluido")) {
+                if(colMap.iva===undefined) colMap.iva=c;
+              }
+              if(v.includes("neto")||v.includes("base")) {
+                if(colMap.base===undefined) colMap.base=c;
+              }
+              if(v.includes("concepto")||v.includes("descripción")) colMap.concepto=c;
+            });
+            break;
+          }
+        }
+
+        if(headerRow===-1) return; // hoja sin datos reconocibles
+
+        // Leer filas de datos
+        for(let r=headerRow+1; r<=range.e.r; r++) {
+          const getCell = (col) => {
+            if(col===undefined) return null;
+            const cell = ws[XLSX.utils.encode_cell({r,c:col})];
+            if(!cell) return null;
+            if(cell.t==="d") return cell.v; // fecha
+            return cell.v;
+          };
+
+          const totalVal = parseNum(getCell(colMap.total));
+          if(totalVal===0) continue; // fila vacía o total cero
+
+          const fechaRaw = getCell(colMap.fecha);
+          const fechaStr = parseFecha(fechaRaw);
+          if(!fechaStr) continue;
+
+          const anyo = getAnyo(fechaStr);
+          const mes  = getMes(fechaStr);
+          if(!anyo || anyo==="NaN") continue;
+
+          const ivaVal  = parseNum(getCell(colMap.iva));
+          const baseVal = parseNum(getCell(colMap.base)) || (totalVal>0&&ivaVal>0 ? Math.round((totalVal-ivaVal)*100)/100 : Math.round(totalVal/1.21*100)/100);
+          const ivaFinal = ivaVal || Math.round((totalVal-baseVal)*100)/100;
+
+          const provVal = getCell(colMap.proveedor);
+          const provStr = provVal ? String(provVal).trim() : "";
+
+          const nfactVal = getCell(colMap.nfactura);
+          const nfactStr = nfactVal ? String(nfactVal).trim() : "";
+
+          nuevas.push({
+            id: "hist_"+Date.now()+"_"+r+"_"+Math.random().toString(36).slice(2),
+            _historico: true,
+            _anyo: anyo,
+            _origen: file.name,
+            tipo: tipoHoja,
+            fecha: fechaStr,
+            numero_factura: nfactStr,
+            proveedor_cliente: provStr || (tipoHoja==="ingreso"?"Cliente":"Proveedor"),
+            nif_cif: "",
+            concepto: getCell(colMap.concepto) ? String(getCell(colMap.concepto)).trim() : "",
+            base_imponible: baseVal,
+            iva_porcentaje: 21,
+            iva_importe: ivaFinal,
+            total: totalVal,
+            categoria: tipoHoja==="ingreso" ? "Servicios externos" : "Otros",
+            estado: "pagada",
+            trimestre: getTrim(mes),
+            archivo_nombre: file.name,
+            archivo_url: null,
+            archivo_tipo: "excel",
+          });
+        }
+      });
+
+      if(nuevas.length===0) {
+        toast("No se encontraron datos en el Excel. Verifica el formato.","err");
+        setImportando(false);
+        e.target.value="";
+        return;
+      }
+
+      const merged = [...historico.filter(f=>f._origen!==file.name),...nuevas];
       setHistorico(merged);
       await guardarHistorico(merged);
       toast(`Importadas ${nuevas.length} filas de ${file.name} — compartido con el equipo ✓`);
@@ -1187,7 +1400,7 @@ function ViewDashboard({ facturas, historico }) {
               <Pie data={catData} cx="50%" cy="50%" innerRadius="42%" outerRadius="72%" paddingAngle={3} dataKey="value">
                 {catData.map((_,i)=><Cell key={i} fill={CAT_COLORS[i%CAT_COLORS.length]}/>)}
               </Pie>
-              <Tooltip formatter={(v)=>fmt(v)} contentStyle={{fontFamily:"Cormorant Garamond",background:"#2C2417",border:"none",color:"#F5F0E8",fontSize:13}}/>
+              <Tooltip formatter={(v,n)=>[fmt(v),n]} contentStyle={{fontFamily:"'Cormorant Garamond',Georgia,serif",background:"#F5F0E8",border:".5px solid #B8962E",color:"#2C2417",fontSize:15,borderRadius:0,boxShadow:"0 4px 16px rgba(44,36,23,.15)"}} itemStyle={{color:"#2C2417"}} labelStyle={{color:"#8B6914",fontSize:13,letterSpacing:".1em",textTransform:"uppercase"}}/>
             </PieChart>
           </ResponsiveContainer>
           <div style={{display:"flex",flexWrap:"wrap",gap:"5px 14px",marginTop:8}}>
