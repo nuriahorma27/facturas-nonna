@@ -30,13 +30,12 @@ async function subirADrive(file, trimestre, anyo) {
     formData.append('trimestre', trimestre);
     formData.append('anyo', String(anyo));
 
-    const resp = await fetch(APPS_SCRIPT_URL, {
+    await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: formData
     });
-
-    const data = await resp.json();
-    return data.success ? data.url : null;
+    return true;
   } catch(e) {
     console.warn("Drive upload failed:", e.message);
     return null;
