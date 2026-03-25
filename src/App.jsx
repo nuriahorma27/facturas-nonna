@@ -66,10 +66,10 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .sidebar{width:220px;background:#2C2417;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh}
 .sb-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
 .sb-mono{width:38px;height:38px;border:1.5px solid #B8962E;display:flex;align-items:center;justify-content:center;color:#B8962E;font-size:15px;margin-bottom:10px}
-.sb-name{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#D4C5A9}
+.sb-name{font-size:13px;letter-spacing:.25em;text-transform:uppercase;color:#D4C5A9}
 .sb-sub{font-size:10px;color:#9C8E7A;margin-top:2px;letter-spacing:.1em}
 .sb-nav{flex:1;padding:16px 0}
-.sb-item{display:flex;align-items:center;gap:12px;padding:13px 24px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#9C8E7A;cursor:pointer;transition:all .2s;border-left:2px solid transparent}
+.sb-item{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#9C8E7A;cursor:pointer;transition:all .2s;border-left:2px solid transparent}
 .sb-item:hover{color:#EDE5D0;background:rgba(255,255,255,.05)}
 .sb-item.active{color:#F5F0E8;border-left-color:#B8962E;background:rgba(184,150,46,.1)}
 .sb-item svg{width:16px;height:16px;flex-shrink:0}
@@ -78,24 +78,24 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .main{flex:1;overflow:auto;background:#EDE5D0}
 .view{padding:48px 44px;animation:fadeUp .5s ease both}
 
-.eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#B8962E;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.eyebrow{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:#B8962E;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 .eyebrow::before{content:'';width:20px;height:.5px;background:#B8962E}
-.view-title{font-size:34px;font-weight:300;margin-bottom:32px}
+.view-title{font-size:38px;font-weight:300;margin-bottom:32px}
 .view-title em{font-style:italic;color:#8B6914}
 
-.btn-ink{padding:11px 26px;background:#2C2417;border:none;font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#F5F0E8;cursor:pointer;position:relative;overflow:hidden;transition:letter-spacing .3s;display:flex;align-items:center;gap:8px}
+.btn-ink{padding:11px 26px;background:#2C2417;border:none;font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:#F5F0E8;cursor:pointer;position:relative;overflow:hidden;transition:letter-spacing .3s;display:flex;align-items:center;gap:8px}
 .btn-ink::before{content:'';position:absolute;inset:0;background:#8B6914;transform:translateX(-100%);transition:transform .3s ease}
 .btn-ink:hover::before{transform:translateX(0)}
 .btn-ink:hover{letter-spacing:.3em}
 .btn-ink span,.btn-ink svg{position:relative;z-index:1}
 .btn-ink:disabled{opacity:.5;cursor:not-allowed}
 .btn-ink:disabled::before{display:none}
-.btn-out{padding:11px 22px;background:none;border:1px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.btn-out{padding:11px 22px;background:none;border:1px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
 .btn-out:hover{border-color:#B8962E;color:#8B6914}
-.btn-sm{padding:8px 18px;background:none;border:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#9C8E7A;cursor:pointer;transition:all .2s}
+.btn-sm{padding:8px 18px;background:none;border:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:#9C8E7A;cursor:pointer;transition:all .2s}
 .btn-sm:hover{border-color:#2C2417;color:#2C2417}
 
-.toast{position:fixed;bottom:28px;right:28px;padding:14px 22px;font-family:'Cormorant Garamond',serif;font-size:14px;z-index:9999;animation:fadeUp .3s ease both;min-width:200px}
+.toast{position:fixed;bottom:28px;right:28px;padding:14px 22px;font-family:'Cormorant Garamond',serif;font-size:16px;z-index:9999;animation:fadeUp .3s ease both;min-width:200px}
 .toast-ok{background:#2C2417;color:#F5F0E8;border-left:3px solid #7BAE7F}
 .toast-err{background:#2C2417;color:#F5F0E8;border-left:3px solid #C25A4A}
 
@@ -105,9 +105,9 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .card:hover{box-shadow:0 6px 28px rgba(44,36,23,.07)}
 
 .pills{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
-.pill{padding:7px 18px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border:.5px solid #D4C5A9;display:flex;align-items:center;gap:8px;background:#F5F0E8}
+.pill{padding:9px 20px;font-size:15px;letter-spacing:.12em;text-transform:uppercase;border:.5px solid #D4C5A9;display:flex;align-items:center;gap:8px;background:#F5F0E8}
 .pill-dot{width:6px;height:6px;border-radius:50%}
-.pill-val{font-size:15px;font-weight:500;color:#2C2417}
+.pill-val{font-size:18px;font-weight:500;color:#2C2417}
 
 .upload-zone{border:1.5px dashed #D4C5A9;background:#F5F0E8;padding:56px 40px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;margin-bottom:24px}
 .upload-zone:hover,.upload-zone.drag{border-color:#B8962E;background:#FAF7F0;box-shadow:0 6px 32px rgba(184,150,46,.1)}
@@ -115,9 +115,9 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .upload-zone:hover .up-icon{border-color:#B8962E;transform:translateY(-3px)}
 .up-icon svg{width:22px;height:22px;stroke:#9C8E7A;transition:stroke .3s}
 .upload-zone:hover .up-icon svg{stroke:#B8962E}
-.up-title{font-size:17px;font-weight:300;margin-bottom:6px}
+.up-title{font-size:20px;font-weight:300;margin-bottom:6px}
 .up-title em{font-style:italic;color:#B8962E}
-.up-sub{font-size:13px;color:#9C8E7A;margin-bottom:18px}
+.up-sub{font-size:15px;color:#9C8E7A;margin-bottom:18px}
 .fmt-tags{display:flex;justify-content:center;gap:8px}
 .fmt-tag{padding:3px 11px;border:.5px solid #D4C5A9;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#9C8E7A}
 .file-cards{margin-bottom:16px}
@@ -126,9 +126,9 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .fc.done{border-color:rgba(123,174,127,.4)}.fc.saved{border-color:rgba(123,174,127,.6);background:#FAFFF8}.fc.error{border-color:rgba(180,60,40,.3)}
 .fc-thumb{width:38px;height:44px;border:.5px solid #D4C5A9;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;letter-spacing:.08em;color:#9C8E7A;background:#EDE5D0;text-transform:uppercase}
 .fc-info{flex:1;min-width:0}
-.fc-name{font-size:13px;color:#2C2417;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
-.fc-meta{font-size:11px;color:#9C8E7A}
-.fc-st{flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.fc-name{font-size:15px;color:#2C2417;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.fc-meta{font-size:13px;color:#9C8E7A}
+.fc-st{flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
 .st-dot{width:5px;height:5px;border-radius:50%}
 .st-waiting .st-dot{background:#D4C5A9}
 .st-processing,.st-uploading{color:#B8962E}.st-processing .st-dot,.st-uploading .st-dot{background:#B8962E;animation:pulse 1s ease-in-out infinite}
@@ -143,14 +143,14 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .rc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
 .rc-f{padding:13px 18px;border-right:.5px solid #D4C5A9;border-bottom:.5px solid #D4C5A9}
 .rc-f:last-child{border-right:none}
-.rc-lbl{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#9C8E7A;margin-bottom:5px}
+.rc-lbl{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9C8E7A;margin-bottom:5px}
 .rc-inp{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:1px 0;transition:border-color .2s}
 .rc-inp:hover{border-bottom-color:#D4C5A9}.rc-inp:focus{border-bottom-color:#B8962E}.rc-inp:disabled{color:#9C8E7A}
 .rc-sel{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:1px 0;-webkit-appearance:none;cursor:pointer;transition:border-color .2s}
 .rc-sel:hover{border-bottom-color:#D4C5A9}.rc-sel:focus{border-bottom-color:#B8962E}.rc-sel:disabled{color:#9C8E7A;cursor:default}
 .rc-act{padding:14px 18px;display:flex;gap:10px;justify-content:flex-end;border-top:.5px solid #D4C5A9}
 
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;font-size:9px;letter-spacing:.15em;text-transform:uppercase}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:12px;letter-spacing:.15em;text-transform:uppercase}
 .badge-gasto{background:rgba(180,60,40,.07);color:#8B3A2A;border:.5px solid rgba(180,60,40,.2)}
 .badge-ingreso{background:rgba(91,138,94,.07);color:#3A6B3E;border:.5px solid rgba(91,138,94,.2)}
 .badge-pagada{color:#3A6B3E}.badge-pendiente{color:#8B6914}
@@ -160,20 +160,20 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 
 .fl-bar{background:#F5F0E8;border:.5px solid #D4C5A9;padding:18px 22px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
 .fg{display:flex;flex-direction:column;gap:5px;min-width:130px;flex:1}
-.fl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810}
-.fi,.fs{background:transparent;border:none;border-bottom:1.5px solid #9C8E7A;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:5px 0;width:100%;-webkit-appearance:none;transition:border-color .2s}
+.fl{font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810}
+.fi,.fs{background:transparent;border:none;border-bottom:1.5px solid #9C8E7A;font-family:'Cormorant Garamond',serif;font-size:16px;color:#2C2417;outline:none;padding:5px 0;width:100%;-webkit-appearance:none;transition:border-color .2s}
 .fi:focus,.fs:focus{border-bottom-color:#B8962E}
 .fi::placeholder{color:#9C8E7A;font-style:italic}
 .twrap{background:#F5F0E8;border:.5px solid #D4C5A9;overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:980px}
-th{padding:13px 13px;text-align:left;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#2C2417;font-weight:600;border-bottom:1.5px solid #B8962E;background:#EDE5D0;white-space:nowrap;user-select:none}
+th{padding:14px 14px;text-align:left;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#2C2417;font-weight:600;border-bottom:1.5px solid #B8962E;background:#EDE5D0;white-space:nowrap;user-select:none}
 th.sort{cursor:pointer;transition:color .2s}
 th.sort:hover,th.sorted{color:#8B6914}
 tr.dr{border-bottom:.5px solid #D4C5A9;transition:background .2s}
 tr.dr:last-child{border-bottom:none}
 tr.dr:hover{background:#FAF7F0}
 tr.editing{background:#FFFDF7;outline:1px solid #B8962E}
-td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
+td{padding:14px 14px;font-size:16px;color:#2C2417;vertical-align:middle}
 .ii{background:transparent;border:none;border-bottom:1px solid #B8962E;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:2px 0;width:100%}
 .is{background:transparent;border:none;border-bottom:1px solid #B8962E;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:2px 0;width:100%;-webkit-appearance:none;cursor:pointer}
 .acts{display:flex;gap:3px;align-items:center}
@@ -186,36 +186,36 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .file-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border:.5px solid #D4C5A9;color:#9C8E7A}
 .file-tag.has{color:#8B6914;border-color:rgba(184,150,46,.35);background:rgba(184,150,46,.05)}
 .tfoot{padding:13px 18px;border-top:.5px solid #D4C5A9;display:flex;justify-content:space-between;align-items:center;background:#EDE5D0}
-.tfoot-count{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#9C8E7A}
+.tfoot-count{font-size:14px;letter-spacing:.15em;text-transform:uppercase;color:#9C8E7A}
 .tfoot-tots{display:flex;gap:22px}
 .tfoot-it{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.tfoot-lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A}
-.tfoot-val{font-size:15px;font-weight:500}
-.empty-row{padding:56px;text-align:center;color:#9C8E7A;font-style:italic;font-size:15px}
+.tfoot-lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A}
+.tfoot-val{font-size:18px;font-weight:500}
+.empty-row{padding:56px;text-align:center;color:#9C8E7A;font-style:italic;font-size:17px}
 .loading-row{padding:36px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px;color:#9C8E7A;font-style:italic}
 
 .tabs{display:flex;background:#F5F0E8;border:.5px solid #D4C5A9;margin-bottom:0}
-.tab{padding:12px 26px;background:none;border:none;font-family:'Cormorant Garamond',serif;font-size:14px;letter-spacing:.15em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s;border-right:.5px solid #D4C5A9}
+.tab{padding:14px 28px;background:none;border:none;font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:.15em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s;border-right:.5px solid #D4C5A9}
 .tab:last-child{border-right:none}
 .tab.active{background:#2C2417;color:#F5F0E8}
 .tab:not(.active):hover{background:#EDE5D0}
 .period-tabs{display:flex;gap:8px;margin-bottom:28px}
-.ptab{padding:9px 18px;background:none;border:1.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#2C2417;cursor:pointer;transition:all .2s}
+.ptab{padding:11px 20px;background:none;border:1.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#2C2417;cursor:pointer;transition:all .2s}
 .ptab.active{border-color:#8B6914;color:#8B6914;background:rgba(139,105,20,.06);font-weight:500}
 .ptab:not(.active):hover{border-color:#2C2417}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:26px}
 .kpi{background:#F5F0E8;border:.5px solid #D4C5A9;padding:22px;position:relative;overflow:hidden;transition:all .3s}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac);opacity:.65}
 .kpi:hover{box-shadow:0 6px 28px rgba(44,36,23,.08);transform:translateY(-1px)}
-.kpi-lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810;margin-bottom:10px}
-.kpi-val{font-size:32px;font-weight:300;letter-spacing:-.02em;color:var(--cl);margin-bottom:6px}
-.kpi-sub{font-size:14px;color:#2C2417;font-style:italic;line-height:1.6;white-space:pre-line}
-.kpi-delta{font-size:14px;margin-top:8px;display:flex;align-items:center;gap:5px;font-weight:500}
+.kpi-lbl{font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810;margin-bottom:10px}
+.kpi-val{font-size:36px;font-weight:300;letter-spacing:-.02em;color:var(--cl);margin-bottom:6px}
+.kpi-sub{font-size:16px;color:#2C2417;font-style:italic;line-height:1.6;white-space:pre-line}
+.kpi-delta{font-size:16px;margin-top:8px;display:flex;align-items:center;gap:5px;font-weight:500}
 .dpos{color:#2E6B32}.dneg{color:#8B3A2A}
 .ch-card{background:#F5F0E8;border:.5px solid #D4C5A9;padding:26px;transition:box-shadow .3s}
 .ch-card:hover{box-shadow:0 6px 28px rgba(44,36,23,.06)}
-.ch-title{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#3A2810;margin-bottom:4px}
-.ch-sub{font-size:15px;color:#2C2417;margin-bottom:22px;font-style:italic}
+.ch-title{font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:#3A2810;margin-bottom:4px}
+.ch-sub{font-size:17px;color:#2C2417;margin-bottom:22px;font-style:italic}
 .ch-subtabs{display:flex;gap:0;margin-bottom:18px;border-bottom:.5px solid #D4C5A9}
 .ch-stab{padding:8px 18px;background:none;border:none;border-bottom:2px solid transparent;font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#9C8E7A;cursor:pointer;transition:all .2s;margin-bottom:-.5px}
 .ch-stab.active{color:#2C2417;border-bottom-color:#B8962E}
@@ -223,26 +223,26 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .full{grid-column:1/-1}
 .pend-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:.5px solid #D4C5A9}
 .pend-row:last-child{border-bottom:none}
-.pend-n{font-size:14px;font-weight:500;color:#2C2417}
-.pend-d{font-size:12px;color:#5C4A2A;margin-top:2px}
-.pend-amt{font-size:16px;font-weight:500}
+.pend-n{font-size:16px;font-weight:500;color:#2C2417}
+.pend-d{font-size:14px;color:#5C4A2A;margin-top:2px}
+.pend-amt{font-size:18px;font-weight:500}
 .prov-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid #D4C5A9}
 .prov-row:last-child{border-bottom:none}
 .prov-rank{font-size:11px;color:#D4C5A9;width:20px;text-align:center}
 .prov-bw{flex:1;display:flex;flex-direction:column;gap:3px}
-.prov-nm{font-size:13px;color:#2C2417}
+.prov-nm{font-size:15px;color:#2C2417}
 .prov-bar{height:3px;background:#D4C5A9;border-radius:2px;overflow:hidden}
 .prov-fill{height:100%;background:#B8962E;border-radius:2px;transition:width .8s ease}
-.prov-tot{font-size:13px;font-weight:500;color:#2C2417;white-space:nowrap}
+.prov-tot{font-size:15px;font-weight:500;color:#2C2417;white-space:nowrap}
 .iva-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .iva-c{padding:14px;border:.5px solid #D4C5A9;text-align:center}
-.iva-lbl{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810;margin-bottom:6px}
-.iva-val{font-size:20px;font-weight:300;color:#B8962E}
-.iva-s{font-size:12px;color:#3A2810;margin-top:3px}
+.iva-lbl{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810;margin-bottom:6px}
+.iva-val{font-size:23px;font-weight:300;color:#B8962E}
+.iva-s{font-size:14px;color:#3A2810;margin-top:3px}
 .trim-table{width:100%;border-collapse:collapse;font-family:'Cormorant Garamond',serif}
-.trim-table th{padding:9px 14px;text-align:right;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#3A2810;font-weight:400;border-bottom:.5px solid #D4C5A9}
+.trim-table th{padding:10px 14px;text-align:right;font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#3A2810;font-weight:400;border-bottom:.5px solid #D4C5A9}
 .trim-table th:first-child{text-align:left}
-.trim-table td{padding:11px 14px;text-align:right;font-size:14px;color:#2C2417;border-bottom:.5px solid #D4C5A9}
+.trim-table td{padding:12px 14px;text-align:right;font-size:16px;color:#2C2417;border-bottom:.5px solid #D4C5A9}
 .trim-table td:first-child{text-align:left;font-weight:500;color:#8B6914}
 .trim-table tr:last-child td{border-bottom:none}
 .ctooltip{background:#2C2417;padding:9px 13px;border:none}
@@ -251,8 +251,8 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .ctt-dot{width:6px;height:6px;border-radius:50%}
 
 .exp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 22px;background:#F5F0E8;border:.5px solid #D4C5A9;margin-bottom:24px}
-.exp-lbl{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#5C4A2A;margin-right:4px}
-.scope-btn{padding:9px 18px;background:none;border:1px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s}
+.exp-lbl{font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:#5C4A2A;margin-right:4px}
+.scope-btn{padding:10px 20px;background:none;border:1px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#5C4A2A;cursor:pointer;transition:all .2s}
 .scope-btn.active{background:#2C2417;color:#F5F0E8;border-color:#2C2417}
 .scope-btn:not(.active):hover{border-color:#2C2417;color:#2C2417}
 .trim-sel{padding:9px 14px;background:#EDE5D0;border:1px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:13px;color:#2C2417;outline:none;cursor:pointer;-webkit-appearance:none;transition:border-color .2s}
@@ -262,8 +262,8 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .prev-tab.active{color:#2C2417;border-bottom-color:#B8962E}
 .sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
 .sum-c{padding:14px;border:.5px solid #D4C5A9;background:#EDE5D0}
-.sum-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810;margin-bottom:6px}
-.sum-val{font-size:18px;font-weight:300}
+.sum-lbl{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#3A2810;margin-bottom:6px}
+.sum-val{font-size:21px;font-weight:300}
 .sh-info{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:.5px solid #D4C5A9}
 .sh-tag{padding:4px 12px;border:.5px solid #D4C5A9;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#5C4A2A;display:flex;align-items:center;gap:6px}
 
@@ -285,8 +285,8 @@ td{padding:12px 13px;font-size:14px;color:#2C2417;vertical-align:middle}
 .modal-dt{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#5C4A2A;margin-bottom:14px}
 .mf{padding:9px 0;border-bottom:.5px solid #D4C5A9}
 .mf:last-child{border-bottom:none}
-.mf-lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A;margin-bottom:3px}
-.mf-val{font-size:14px;color:#2C2417}
+.mf-lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A;margin-bottom:3px}
+.mf-val{font-size:16px;color:#2C2417}
 .modal-ft{padding:14px 26px;border-top:.5px solid #D4C5A9;display:flex;gap:9px;justify-content:flex-end;background:#EDE5D0}
 
 @media(max-width:900px){
@@ -342,7 +342,18 @@ tipo: gasto|ingreso. categoria: Telas y materiales|Transporte y envíos|Marketin
   const d = await res.json();
   const txt = d.content?.map(b=>b.text||"").join("")||"";
   const clean = txt.replace(/```json|```/g,"").trim();
-  return JSON.parse(clean);
+  const parsed = JSON.parse(clean);
+
+  // Auto-calcular IVA si es ingreso y no viene desglosado
+  if (parsed.tipo === "ingreso" && parsed.total > 0 && (!parsed.iva_importe || Number(parsed.iva_importe) === 0)) {
+    const total = Number(parsed.total);
+    const ivaPct = Number(parsed.iva_porcentaje) || 21;
+    const base = Math.round((total / (1 + ivaPct/100)) * 100) / 100;
+    const iva  = Math.round((total - base) * 100) / 100;
+    parsed.base_imponible = base;
+    parsed.iva_importe    = iva;
+  }
+  return parsed;
 }
 
 function buildExcel(facturas) {
@@ -391,7 +402,12 @@ function buildExcel(facturas) {
   };
   XLSX.utils.book_append_sheet(wb,build(facturas,"Todas las facturas"),"Resumen");
   XLSX.utils.book_append_sheet(wb,build(facturas.filter(f=>f.tipo==="ingreso"),"Ingresos"),"Ingresos");
-  XLSX.utils.book_append_sheet(wb,build(facturas.filter(f=>f.tipo==="gasto"),"Gastos"),"Gastos");
+  const gastosSinEspeciales = facturas.filter(f=>f.tipo==="gasto"&&f.categoria!=="Nóminas"&&f.categoria!=="Alquiler");
+  XLSX.utils.book_append_sheet(wb,build(gastosSinEspeciales,"Gastos (facturas)"),"Gastos");
+  const nominas = facturas.filter(f=>f.categoria==="Nóminas");
+  if(nominas.length>0) XLSX.utils.book_append_sheet(wb,build(nominas,"Nóminas"),"Nóminas");
+  const alquiler = facturas.filter(f=>f.categoria==="Alquiler");
+  if(alquiler.length>0) XLSX.utils.book_append_sheet(wb,build(alquiler,"Alquiler"),"Alquiler");
   XLSX.writeFile(wb,"AtelierLaNonna_"+new Date().toISOString().slice(0,10)+".xlsx",{bookType:"xlsx",cellStyles:true});
 }
 
@@ -443,6 +459,18 @@ function ViewSubida({ onSaved, toast }) {
     setFiles(p=>p.map(f=>f.id===item.id?{...f,status:"uploading"}:f));
     try {
       const supa = await db();
+
+      // Comprobar duplicado por número de factura (solo warning, no bloquea)
+      let esDuplicada = false;
+      if (data.numero_factura) {
+        const {data:existing} = await supa.from("facturas").select("id").eq("numero_factura", data.numero_factura).limit(1);
+        if (existing && existing.length > 0) {
+          esDuplicada = true;
+          setResults(p=>({...p,[item.id]:{...p[item.id],_duplicado:true}}));
+          toast("⚠️ Posible duplicada: "+data.numero_factura,"err");
+        }
+      }
+
       const tipo = item.file.type.startsWith("image")?"image":"pdf";
       const path = `${Date.now()}_${item.file.name.replace(/\s+/g,"_")}`;
 
@@ -467,6 +495,7 @@ function ViewSubida({ onSaved, toast }) {
         archivo_url:    publicUrl,
         archivo_tipo:   tipo,
         drive_url:      driveUrl || null,
+        es_duplicada:   esDuplicada,
       }]);
       if(dbErr) throw dbErr;
 
@@ -485,10 +514,79 @@ function ViewSubida({ onSaved, toast }) {
 
   const wc = files.filter(f=>f.status==="waiting"||f.status==="error").length;
 
+  const [modoManual, setModoManual] = useState(false);
+  const [manual, setManual] = useState({tipo:"gasto",fecha:"",numero_factura:"",proveedor_cliente:"",nif_cif:"",concepto:"",base_imponible:"",iva_porcentaje:"21",iva_importe:"",total:"",categoria:"Telas y materiales",estado:"pagada"});
+  const [savingManual, setSavingManual] = useState(false);
+
+  const updManual = (k,v) => setManual(p => {
+    const next = {...p, [k]:v};
+    if((k==="base_imponible"||k==="iva_porcentaje") && next.base_imponible) {
+      const base = parseFloat(next.base_imponible)||0;
+      const pct  = parseFloat(next.iva_porcentaje)||21;
+      const iva  = Math.round(base*pct/100*100)/100;
+      next.iva_importe = String(iva);
+      next.total = String(Math.round((base+iva)*100)/100);
+    }
+    return next;
+  });
+
+  const saveManual = async () => {
+    if(!manual.proveedor_cliente || !manual.fecha) { toast("Completa al menos fecha y proveedor","err"); return; }
+    setSavingManual(true);
+    try {
+      const supa = await db();
+      const {error} = await supa.from("facturas").insert([{
+        tipo: manual.tipo, fecha: manual.fecha, numero_factura: manual.numero_factura,
+        proveedor_cliente: manual.proveedor_cliente, nif_cif: manual.nif_cif, concepto: manual.concepto,
+        base_imponible: parseFloat(manual.base_imponible)||0, iva_porcentaje: parseFloat(manual.iva_porcentaje)||21,
+        iva_importe: parseFloat(manual.iva_importe)||0, total: parseFloat(manual.total)||0,
+        categoria: manual.categoria, estado: manual.estado,
+        archivo_nombre: null, archivo_url: null, archivo_tipo: null, drive_url: null, es_duplicada: false,
+      }]);
+      if(error) throw error;
+      toast("Entrada guardada ✓");
+      setManual({tipo:"gasto",fecha:"",numero_factura:"",proveedor_cliente:"",nif_cif:"",concepto:"",base_imponible:"",iva_porcentaje:"21",iva_importe:"",total:"",categoria:"Telas y materiales",estado:"pagada"});
+      onSaved();
+    } catch(e) { toast("Error: "+e.message,"err"); }
+    setSavingManual(false);
+  };
+
   return (
     <div className="view">
       <div className="eyebrow">Módulo 2</div>
       <h1 className="view-title">Subir <em>facturas</em></h1>
+
+      {/* Toggle modo */}
+      <div style={{display:"flex",gap:0,marginBottom:28,borderBottom:"1.5px solid #D4C5A9"}}>
+        {[["archivo","Subir archivo (IA)"],["manual","Entrada manual"]].map(([k,l])=>(
+          <button key={k} onClick={()=>setModoManual(k==="manual")} style={{padding:"11px 24px",background:"none",border:"none",borderBottom:modoManual===(k==="manual")?"2.5px solid #B8962E":"2.5px solid transparent",fontFamily:"'Cormorant Garamond',serif",fontSize:16,letterSpacing:".1em",textTransform:"uppercase",color:modoManual===(k==="manual")?"#2C2417":"#9C8E7A",cursor:"pointer",marginBottom:-1.5,transition:"all .2s"}}>{l}</button>
+        ))}
+      </div>
+
+      {/* Formulario manual */}
+      {modoManual&&(
+        <div style={{background:"#F5F0E8",border:".5px solid #D4C5A9",marginBottom:32}}>
+          <div style={{padding:"14px 20px",background:"#EDE5D0",borderBottom:".5px solid #D4C5A9",fontSize:13,letterSpacing:".18em",textTransform:"uppercase",color:"#2C2417"}}>Nueva entrada manual</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))"}}>
+            {[["Fecha","fecha","date"],["Nº factura / ref.","numero_factura","text"],["Proveedor / Cliente","proveedor_cliente","text"],["NIF / CIF","nif_cif","text"],["Concepto","concepto","text"],["Base imponible","base_imponible","number"],["IVA %","iva_porcentaje","number"],["IVA importe","iva_importe","number"],["Total","total","number"]].map(([lbl,fld,tp])=>(
+              <div key={fld} className="rc-f">
+                <div className="rc-lbl">{lbl}</div>
+                <input className="rc-inp" type={tp} value={manual[fld]} onChange={e=>updManual(fld,e.target.value)} placeholder={tp==="number"?"0.00":""}/>
+              </div>
+            ))}
+            <div className="rc-f"><div className="rc-lbl">Tipo</div><select className="rc-sel" value={manual.tipo} onChange={e=>updManual("tipo",e.target.value)}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select></div>
+            <div className="rc-f"><div className="rc-lbl">Categoría</div><select className="rc-sel" value={manual.categoria} onChange={e=>updManual("categoria",e.target.value)}>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+            <div className="rc-f"><div className="rc-lbl">Estado</div><select className="rc-sel" value={manual.estado} onChange={e=>updManual("estado",e.target.value)}><option value="pagada">Pagada</option><option value="pendiente">Pendiente</option></select></div>
+          </div>
+          <div style={{padding:"14px 20px",display:"flex",justifyContent:"flex-end",gap:10,borderTop:".5px solid #D4C5A9"}}>
+            <button className="btn-sm" onClick={()=>setManual({tipo:"gasto",fecha:"",numero_factura:"",proveedor_cliente:"",nif_cif:"",concepto:"",base_imponible:"",iva_porcentaje:"21",iva_importe:"",total:"",categoria:"Telas y materiales",estado:"pagada"})}>Limpiar</button>
+            <button className="btn-ink" onClick={saveManual} disabled={savingManual}><span>{savingManual?"Guardando...":"Guardar entrada"}</span></button>
+          </div>
+        </div>
+      )}
+
+      {/* Modo archivo */}
+      {!modoManual&&<>
       <div className={"upload-zone"+(drag?" drag":"")} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={onDrop} onClick={()=>inputRef.current.click()}>
         <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>addFiles(e.target.files)}/>
         <div className="up-icon">{I.upload}</div>
@@ -531,6 +629,7 @@ function ViewSubida({ onSaved, toast }) {
                   <span className="rc-name">{item.file.name}</span>
                   <div style={{display:"flex",gap:7}}>
                     {isSaved&&<span className="badge badge-ok">✓ En Supabase</span>}
+                    {r._duplicado&&<span className="badge" style={{background:"rgba(180,30,20,.12)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.5)",fontSize:13,fontWeight:600,padding:"4px 12px"}}>⚠ DUPLICADA</span>}
                     <span className={"badge badge-"+(r.tipo==="gasto"?"gasto":"ingreso")}>{r.tipo==="gasto"?"Gasto":"Ingreso"}</span>
                   </div>
                 </div>
@@ -555,6 +654,7 @@ function ViewSubida({ onSaved, toast }) {
           })}
         </div>
       )}
+      </>}
     </div>
   );
 }
@@ -562,24 +662,121 @@ function ViewSubida({ onSaved, toast }) {
 // ═══════════════════════════════════════════════════════════
 // VISTA: LISTADO
 // ═══════════════════════════════════════════════════════════
-function ViewListado({ facturas, loading, onRefresh, toast }) {
+function ViewListado({ facturas, historico, setHistorico, loading, onRefresh, toast }) {
   const [editingId,setEditingId] = useState(null);
   const [editData, setEditData]  = useState({});
   const [sortField,setSortField] = useState("creado_en");
   const [sortDir,  setSortDir]   = useState("desc");
   const [visor,    setVisor]     = useState(null);
   const [exporting,setExporting] = useState(false);
-  const [filters,  setFilters]   = useState({busqueda:"",tipo:"",categoria:"",estado:"",fechaDesde:"",fechaHasta:""});
+  const [filters,  setFilters]   = useState({busqueda:"",tipo:"",categorias:[],estado:"",fechaDesde:"",fechaHasta:""});
+  const [vistaTab, setVistaTab]  = useState("todas");
+  const _hoy = new Date();
+  const _anyoActual = _hoy.getFullYear().toString();
+  const _mesActual = _hoy.getMonth()+1;
+  const _trimActual = _mesActual<=3?"T1":_mesActual<=6?"T2":_mesActual<=9?"T3":"T4";
+  const [filtroAnyo,  setFiltroAnyo]  = useState(_anyoActual);
+  const [filtroTrim,  setFiltroTrim]  = useState(_trimActual);
+  const [importando,  setImportando]  = useState(false);
+  const xlsxRef = useRef();
+
+  // Años disponibles en histórico
+  const anyosDisponibles = useMemo(()=>{
+    const set = new Set();
+    set.add(_anyoActual);
+    historico.forEach(f=>{ if(f._anyo) set.add(f._anyo); });
+    return [...set].sort((a,b)=>b-a);
+  },[historico,_anyoActual]);
+
+  // Parsear Excel histórico
+  const importarExcel = async(e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    setImportando(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:"array"});
+      const nuevas = [];
+      wb.SheetNames.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+        rows.forEach((row, idx) => {
+          const keys = Object.keys(row).map(k=>k.toLowerCase().trim());
+          const get = (...names) => {
+            for(const n of names) {
+              const k = Object.keys(row).find(k=>k.toLowerCase().includes(n));
+              if(k && row[k]!=="") return String(row[k]).trim();
+            }
+            return "";
+          };
+          const total = parseFloat(get("total","importe","amount").replace(/[^0-9.,]/g,"").replace(",",".")) || 0;
+          const base  = parseFloat(get("base").replace(/[^0-9.,]/g,"").replace(",",".")) || 0;
+          const iva   = parseFloat(get("iva","cuota").replace(/[^0-9.,]/g,"").replace(",",".")) || 0;
+          const fecha = get("fecha","date","f.");
+          let anyo = "";
+          let mes = 0;
+          // Detectar año de la fecha o del nombre de la hoja
+          const matchAnyo = (fecha+" "+sheetName).match(/20\d{2}/);
+          if(matchAnyo) anyo = matchAnyo[0];
+          const matchMes = fecha.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.]/);
+          if(matchMes) mes = parseInt(matchMes[2]) || parseInt(matchMes[1]) || 0;
+          const trim = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
+          if(total===0 && !get("proveedor","cliente","nombre","empresa","razón")) return;
+          nuevas.push({
+            id: "hist_"+Date.now()+"_"+idx,
+            _historico: true,
+            _anyo: anyo,
+            tipo: get("tipo","type").toLowerCase().includes("ingreso")?"ingreso":"gasto",
+            fecha,
+            numero_factura: get("factura","número","nº","ref","n.","num"),
+            proveedor_cliente: get("proveedor","cliente","nombre","empresa","razón social"),
+            nif_cif: get("nif","cif","vat"),
+            concepto: get("concepto","descripción","description"),
+            base_imponible: base || (total>0&&iva>0? Math.round((total-iva)*100)/100 : Math.round(total/1.21*100)/100),
+            iva_porcentaje: 21,
+            iva_importe: iva || (total>0? Math.round((total - (total/1.21))*100)/100 : 0),
+            total,
+            categoria: get("categoria","categoría","category") || "Otros",
+            estado: get("estado","pagado","paid").toLowerCase().includes("pend")?"pendiente":"pagada",
+            trimestre: trim,
+            archivo_nombre: file.name,
+            archivo_url: null,
+            archivo_tipo: "excel",
+          });
+        });
+      });
+      setHistorico(p=>[...p.filter(f=>f._origen!==file.name),...nuevas.map(f=>({...f,_origen:file.name}))]);
+      toast(`Importadas ${nuevas.length} filas de ${file.name} ✓`);
+    } catch(err) {
+      toast("Error al leer el Excel: "+err.message,"err");
+    }
+    setImportando(false);
+    e.target.value="";
+  };
 
   const setF = (k,v)=>setFilters(p=>({...p,[k]:v}));
-  const resetF = ()=>setFilters({busqueda:"",tipo:"",categoria:"",estado:"",fechaDesde:"",fechaHasta:""});
+  const resetF = ()=>setFilters({busqueda:"",tipo:"",categorias:[],estado:"",fechaDesde:"",fechaHasta:""});
+  const toggleCat = (cat) => setFilters(p=>({...p, categorias: p.categorias.includes(cat)?p.categorias.filter(c=>c!==cat):[...p.categorias,cat]}));
   const pD = (s)=>{const[d,m,y]=(s||"").split("/");return new Date(`${y}-${m}-${d}`);};
 
   const filtered = useMemo(()=>{
-    let arr=[...facturas];
+    // Merge Supabase + histórico con filtro año/trimestre
+    const supaFiltradas = facturas.filter(f=>!f.eliminado_en).map(f=>{
+      const mes = parseInt((f.fecha||"").split("/")[1])||0;
+      const anyo = (f.fecha||"").split("/")[2]||"";
+      const trim = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
+      return {...f, _anyo: anyo, trimestre: trim};
+    });
+    let arr = [...supaFiltradas, ...historico];
+    // Filtro por año
+    if(filtroAnyo) arr=arr.filter(f=>f._anyo===filtroAnyo);
+    // Filtro por trimestre
+    if(filtroTrim) arr=arr.filter(f=>f.trimestre===filtroTrim);
+    if(vistaTab==="gastos")   arr=arr.filter(f=>f.tipo==="gasto");
+    if(vistaTab==="ingresos") arr=arr.filter(f=>f.tipo==="ingreso");
     if(filters.busqueda) arr=arr.filter(f=>(f.proveedor_cliente||"").toLowerCase().includes(filters.busqueda.toLowerCase())||(f.numero_factura||"").toLowerCase().includes(filters.busqueda.toLowerCase()));
     if(filters.tipo)     arr=arr.filter(f=>f.tipo===filters.tipo);
-    if(filters.categoria)arr=arr.filter(f=>f.categoria===filters.categoria);
+    if(filters.categorias.length>0)arr=arr.filter(f=>filters.categorias.includes(f.categoria));
     if(filters.estado)   arr=arr.filter(f=>f.estado===filters.estado);
     if(filters.fechaDesde)arr=arr.filter(f=>f.fecha&&pD(f.fecha)>=new Date(filters.fechaDesde));
     if(filters.fechaHasta)arr=arr.filter(f=>f.fecha&&pD(f.fecha)<=new Date(filters.fechaHasta));
@@ -592,7 +789,7 @@ function ViewListado({ facturas, loading, onRefresh, toast }) {
       return 0;
     });
     return arr;
-  },[facturas,filters,sortField,sortDir]);
+  },[facturas,filters,sortField,sortDir,vistaTab,filtroAnyo,filtroTrim,historico]);
 
   const toggleSort=(f)=>{if(sortField===f)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortField(f);setSortDir("asc");}};
   const startEdit=(f)=>{setEditingId(f.id);setEditData({...f});};
@@ -608,9 +805,35 @@ function ViewListado({ facturas, loading, onRefresh, toast }) {
   };
 
   const deleteF=async(id)=>{
-    if(!window.confirm("¿Eliminar esta factura?"))return;
-    try{const supa=await db();const{error}=await supa.from("facturas").delete().eq("id",id);if(error)throw error;toast("Eliminada");onRefresh();}
-    catch(e){toast("Error: "+e.message,"err");}
+    if(!window.confirm("¿Mover esta factura a la papelera? Podrás recuperarla en Historial durante 48h."))return;
+    try{
+      const supa=await db();
+      const{error}=await supa.from("facturas").update({eliminado_en: new Date().toISOString()}).eq("id",id);
+      if(error)throw error;
+      toast("Movida a la papelera ✓");
+      onRefresh();
+    }catch(e){toast("Error: "+e.message,"err");}
+  };
+
+  const restoreF=async(id)=>{
+    try{
+      const supa=await db();
+      const{error}=await supa.from("facturas").update({eliminado_en: null}).eq("id",id);
+      if(error)throw error;
+      toast("Factura recuperada ✓");
+      onRefresh();
+    }catch(e){toast("Error: "+e.message,"err");}
+  };
+
+  const deleteForeverF=async(id)=>{
+    if(!window.confirm("¿Eliminar definitivamente? Esta acción no se puede deshacer."))return;
+    try{
+      const supa=await db();
+      const{error}=await supa.from("facturas").delete().eq("id",id);
+      if(error)throw error;
+      toast("Eliminada definitivamente");
+      onRefresh();
+    }catch(e){toast("Error: "+e.message,"err");}
   };
 
   const downloadFile=(f)=>{ if(f.archivo_url)window.open(f.archivo_url,"_blank"); else window.alert("Sin archivo adjunto."); };
@@ -618,6 +841,10 @@ function ViewListado({ facturas, loading, onRefresh, toast }) {
 
   const tG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
   const tI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
+  const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.iva_importe),0);
+  const ivaI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.iva_importe),0);
+  const nG=filtered.filter(f=>f.tipo==="gasto").length;
+  const nI=filtered.filter(f=>f.tipo==="ingreso").length;
   const pend=filtered.filter(f=>f.estado==="pendiente").length;
   const Arr=({f})=>sortField===f?<span style={{marginLeft:4,opacity:.7}}>{sortDir==="asc"?"↑":"↓"}</span>:<span style={{marginLeft:4,opacity:.2}}>↕</span>;
 
@@ -631,21 +858,91 @@ function ViewListado({ facturas, loading, onRefresh, toast }) {
         </div>
       </div>
 
-      <div className="pills">
-        <div className="pill"><span className="pill-dot" style={{background:"#C25A4A"}}/>Gastos<span className="pill-val">{fmt(tG)}</span></div>
-        <div className="pill"><span className="pill-dot" style={{background:"#5A8A5E"}}/>Ingresos<span className="pill-val">{fmt(tI)}</span></div>
-        <div className="pill"><span className="pill-dot" style={{background:"#B8962E"}}/>Pendientes<span className="pill-val">{pend}</span></div>
-        <div className="pill"><span className="pill-dot" style={{background:"#2C2417"}}/>Total<span className="pill-val">{facturas.length} facturas</span></div>
+      {/* Tabs de vista */}
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1.5px solid #D4C5A9"}}>
+        {[["todas","Total"],["gastos","Gastos"],["ingresos","Ingresos"]].map(([k,l])=>(
+          <button key={k} onClick={()=>setVistaTab(k)} style={{padding:"12px 28px",background:"none",border:"none",borderBottom:vistaTab===k?"2.5px solid #B8962E":"2.5px solid transparent",fontFamily:"'Cormorant Garamond',serif",fontSize:16,letterSpacing:".12em",textTransform:"uppercase",color:vistaTab===k?"#2C2417":"#9C8E7A",cursor:"pointer",marginBottom:-1.5,transition:"all .2s",fontWeight:vistaTab===k?500:400}}>{l}</button>
+        ))}
+      </div>
+
+      {/* Cajas de resumen según vista */}
+      <div className="pills" style={{marginBottom:24}}>
+        {vistaTab==="todas"&&<>
+          <div className="pill"><span className="pill-dot" style={{background:"#C25A4A"}}/>Gastos<span className="pill-val" style={{color:"#8B3A2A"}}>{fmt(tG)}</span></div>
+          <div className="pill"><span className="pill-dot" style={{background:"#5A8A5E"}}/>Ingresos<span className="pill-val" style={{color:"#3A6B3E"}}>{fmt(tI)}</span></div>
+          <div className="pill"><span className="pill-dot" style={{background:"#B8962E"}}/>Pendientes<span className="pill-val">{pend}</span></div>
+          <div className="pill"><span className="pill-dot" style={{background:"#2C2417"}}/>Total<span className="pill-val">{facturas.length} facturas</span></div>
+        </>}
+        {vistaTab==="gastos"&&<>
+          <div className="pill"><span className="pill-dot" style={{background:"#C25A4A"}}/>Total gastos<span className="pill-val" style={{color:"#8B3A2A"}}>{fmt(tG)}</span></div>
+          <div className="pill"><span className="pill-dot" style={{background:"#B8962E"}}/>IVA soportado<span className="pill-val" style={{color:"#8B6914"}}>{fmt(ivaG)}</span></div>
+          <div className="pill"><span className="pill-dot" style={{background:"#2C2417"}}/>Nº facturas<span className="pill-val">{nG}</span></div>
+        </>}
+        {vistaTab==="ingresos"&&<>
+          <div className="pill"><span className="pill-dot" style={{background:"#5A8A5E"}}/>Total ingresos<span className="pill-val" style={{color:"#3A6B3E"}}>{fmt(tI)}</span></div>
+          <div className="pill"><span className="pill-dot" style={{background:"#B8962E"}}/>IVA repercutido<span className="pill-val" style={{color:"#8B6914"}}>{fmt(ivaI)}</span></div>
+          <div className="pill"><span className="pill-dot" style={{background:"#2C2417"}}/>Nº facturas<span className="pill-val">{nI}</span></div>
+        </>}
       </div>
 
       <div className="fl-bar">
         <div className="fg" style={{minWidth:190}}><label className="fl">Buscar</label><input className="fi" placeholder="Proveedor, nº factura..." value={filters.busqueda} onChange={e=>setF("busqueda",e.target.value)}/></div>
         <div className="fg"><label className="fl">Tipo</label><select className="fs" value={filters.tipo} onChange={e=>setF("tipo",e.target.value)}><option value="">Todos</option><option value="gasto">Gastos</option><option value="ingreso">Ingresos</option></select></div>
-        <div className="fg"><label className="fl">Categoría</label><select className="fs" value={filters.categoria} onChange={e=>setF("categoria",e.target.value)}><option value="">Todas</option>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+        <div className="fg" style={{minWidth:200,position:"relative"}}>
+          <label className="fl">Categoría {filters.categorias.length>0&&<span style={{color:"#B8962E"}}>({filters.categorias.length})</span>}</label>
+          <div style={{border:"none",borderBottom:"1.5px solid #9C8E7A",padding:"5px 0",fontSize:16,color:filters.categorias.length===0?"#9C8E7A":"#2C2417",cursor:"pointer",fontFamily:"'Cormorant Garamond',serif",fontStyle:filters.categorias.length===0?"italic":"normal"}} onClick={()=>setF("_catOpen",!filters._catOpen)}>
+            {filters.categorias.length===0?"Todas":filters.categorias.length===1?filters.categorias[0]:filters.categorias.length+" seleccionadas"}
+          </div>
+          {filters._catOpen&&<div style={{position:"absolute",top:"100%",left:0,zIndex:100,background:"#F5F0E8",border:".5px solid #D4C5A9",boxShadow:"0 8px 24px rgba(44,36,23,.15)",minWidth:220,padding:"8px 0"}}>
+            {CATS.map(c=>(
+              <div key={c} onClick={()=>toggleCat(c)} style={{padding:"9px 16px",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",gap:10,color:filters.categorias.includes(c)?"#2C2417":"#5C4A2A",background:filters.categorias.includes(c)?"rgba(184,150,46,.08)":"none",fontFamily:"'Cormorant Garamond',serif"}}>
+                <span style={{width:14,height:14,border:".5px solid "+(filters.categorias.includes(c)?"#B8962E":"#D4C5A9"),background:filters.categorias.includes(c)?"#B8962E":"none",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {filters.categorias.includes(c)&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#F5F0E8" strokeWidth={3}><path d="M4.5 12.75l6 6 9-13.5"/></svg>}
+                </span>
+                {c}
+              </div>
+            ))}
+            <div style={{borderTop:".5px solid #D4C5A9",margin:"8px 0 0",padding:"8px 16px"}}>
+              <button className="btn-sm" onClick={()=>{setF("categorias",[]);setF("_catOpen",false);}}>Limpiar</button>
+            </div>
+          </div>}
+        </div>
         <div className="fg"><label className="fl">Estado</label><select className="fs" value={filters.estado} onChange={e=>setF("estado",e.target.value)}><option value="">Todos</option><option value="pagada">Pagada</option><option value="pendiente">Pendiente</option></select></div>
         <div className="fg"><label className="fl">Desde</label><input type="date" className="fi" value={filters.fechaDesde} onChange={e=>setF("fechaDesde",e.target.value)}/></div>
         <div className="fg"><label className="fl">Hasta</label><input type="date" className="fi" value={filters.fechaHasta} onChange={e=>setF("fechaHasta",e.target.value)}/></div>
-        <button className="btn-sm" onClick={resetF}>Limpiar</button>
+        <div className="fg" style={{minWidth:100}}>
+          <label className="fl">Año</label>
+          <select className="fs" value={filtroAnyo} onChange={e=>setFiltroAnyo(e.target.value)}>
+            <option value="">Todos</option>
+            {anyosDisponibles.map(a=><option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
+        <div className="fg" style={{minWidth:90}}>
+          <label className="fl">Trimestre</label>
+          <select className="fs" value={filtroTrim} onChange={e=>setFiltroTrim(e.target.value)}>
+            <option value="">Todo el año</option>
+            <option value="T1">T1</option>
+            <option value="T2">T2</option>
+            <option value="T3">T3</option>
+            <option value="T4">T4</option>
+          </select>
+        </div>
+        <button className="btn-sm" onClick={()=>{resetF();setFiltroAnyo(_anyoActual);setFiltroTrim(_trimActual);}}>Limpiar</button>
+      </div>
+
+      {/* Botón importar Excel histórico */}
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"12px 18px",background:"rgba(90,100,180,.06)",border:".5px solid rgba(90,100,180,.2)"}}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3A3A8B" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span style={{fontSize:14,color:"#3A3A8B",letterSpacing:".1em",textTransform:"uppercase"}}>Datos históricos</span>
+        {historico.length>0&&<span style={{fontSize:13,color:"#5A5A9E",fontStyle:"italic"}}>{historico.length} filas cargadas</span>}
+        <input ref={xlsxRef} type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={importarExcel}/>
+        <button className="btn-sm" style={{marginLeft:"auto",borderColor:"rgba(90,100,180,.3)",color:"#3A3A8B"}} onClick={()=>xlsxRef.current.click()} disabled={importando}>
+          {importando?"Leyendo...":"+ Subir Excel histórico"}
+        </button>
+        {historico.length>0&&<>
+          <span style={{fontSize:13,color:"#5A5A9E",fontStyle:"italic"}}>{historico.length} filas · guardadas en este navegador</span>
+          <button className="btn-sm" style={{color:"#8B3A2A",borderColor:"rgba(180,60,40,.3)"}} onClick={()=>{if(window.confirm("¿Borrar todos los datos históricos del navegador?"))setHistorico([]);}}>Limpiar</button>
+        </>}
       </div>
 
       <div className="twrap">
@@ -664,7 +961,14 @@ function ViewListado({ facturas, loading, onRefresh, toast }) {
               const isE=editingId===f.id,d=isE?editData:f;
               return(
                 <tr key={f.id} className={"dr"+(isE?" editing":"")} style={{animationDelay:i*.025+"s"}}>
-                  <td>{isE?<select className="is" value={d.tipo} onChange={e=>setEditData(p=>({...p,tipo:e.target.value}))}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select>:<span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span>}</td>
+                  <td>
+                    {isE?<select className="is" value={d.tipo} onChange={e=>setEditData(p=>({...p,tipo:e.target.value}))}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select>
+                    :<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                      <span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span>
+                      {f.es_duplicada&&<span className="badge" style={{background:"rgba(180,30,20,.1)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.4)"}}>⚠ Dup.</span>}
+                      {f._historico&&<span className="badge" style={{background:"rgba(90,100,180,.1)",color:"#3A3A8B",border:".5px solid rgba(90,100,180,.3)"}}>Histórico</span>}
+                    </div>}
+                  </td>
                   <td>{isE?<input className="ii" value={d.fecha||""} onChange={e=>setEditData(p=>({...p,fecha:e.target.value}))} style={{width:95}}/>:f.fecha}</td>
                   <td style={{color:"#9C8E7A",fontSize:13}}>{isE?<input className="ii" value={d.numero_factura||""} onChange={e=>setEditData(p=>({...p,numero_factura:e.target.value}))}/>:f.numero_factura}</td>
                   <td style={{fontWeight:500}}>{isE?<input className="ii" value={d.proveedor_cliente||""} onChange={e=>setEditData(p=>({...p,proveedor_cliente:e.target.value}))}/>:f.proveedor_cliente}</td>
@@ -728,13 +1032,17 @@ function ViewListado({ facturas, loading, onRefresh, toast }) {
 const MOCK_2024=[{mes:"Ene",g:3200,i:4100},{mes:"Feb",g:2800,i:3600},{mes:"Mar",g:4100,i:5200},{mes:"Abr",g:3600,i:4800},{mes:"May",g:3900,i:5100},{mes:"Jun",g:4200,i:6200},{mes:"Jul",g:2900,i:3800},{mes:"Ago",g:2100,i:2900},{mes:"Sep",g:3800,i:5400},{mes:"Oct",g:4500,i:6100},{mes:"Nov",g:5200,i:7200},{mes:"Dic",g:4800,i:6800}];
 const TRIM={T1:[0,1,2],T2:[3,4,5],T3:[6,7,8],T4:[9,10,11]};
 
-function ViewDashboard({ facturas }) {
+function ViewDashboard({ facturas, historico }) {
   const [vista,  setVista]  = useState("resumen");
   const [periodo,setPeriodo]= useState("mensual");
   const [cSub,   setCSub]   = useState("ingresos");
 
-  const gas=facturas.length>0?facturas.filter(f=>f.tipo==="gasto"):MOCK.filter(f=>f.tipo==="gasto");
-  const ing=facturas.length>0?facturas.filter(f=>f.tipo==="ingreso"):MOCK.filter(f=>f.tipo==="ingreso");
+  const _hoy2 = new Date();
+  const _anyoAct = _hoy2.getFullYear().toString();
+  const todosLosDatos = [...facturas.filter(f=>!f.eliminado_en), ...(historico||[])];
+  const useMock = todosLosDatos.length===0;
+  const gas=(useMock?MOCK:todosLosDatos).filter(f=>f.tipo==="gasto");
+  const ing=(useMock?MOCK:todosLosDatos).filter(f=>f.tipo==="ingreso");
   const tG=gas.reduce((s,f)=>s+Number(f.total),0);
   const tI=ing.reduce((s,f)=>s+Number(f.total),0);
   const bal=tI-tG;
@@ -1052,13 +1360,100 @@ function ViewExportar({ facturas, toast }) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// VISTA: HISTORIAL / PAPELERA
+// ═══════════════════════════════════════════════════════════
+function ViewHistorial({ facturas, onRefresh, toast }) {
+  const eliminadas = facturas.filter(f=>f.eliminado_en);
+  const ahora = new Date();
+
+  const horasRestantes = (f) => {
+    const eliminado = new Date(f.eliminado_en);
+    const diff = 48 - (ahora - eliminado) / 3600000;
+    return Math.max(0, diff).toFixed(0);
+  };
+
+  const restoreF = async(id) => {
+    try {
+      const supa = await db();
+      const {error} = await supa.from("facturas").update({eliminado_en: null}).eq("id", id);
+      if(error) throw error;
+      toast("Factura recuperada ✓");
+      onRefresh();
+    } catch(e) { toast("Error: "+e.message,"err"); }
+  };
+
+  const deleteForeverF = async(id) => {
+    if(!window.confirm("¿Eliminar definitivamente? Esta acción no se puede deshacer.")) return;
+    try {
+      const supa = await db();
+      const {error} = await supa.from("facturas").delete().eq("id", id);
+      if(error) throw error;
+      toast("Eliminada definitivamente");
+      onRefresh();
+    } catch(e) { toast("Error: "+e.message,"err"); }
+  };
+
+  return (
+    <div className="view">
+      <div className="eyebrow">Papelera</div>
+      <h1 className="view-title">Historial <em>eliminadas</em></h1>
+      <p style={{fontSize:16,color:"#9C8E7A",fontStyle:"italic",marginBottom:28}}>Las facturas eliminadas se conservan 48 horas. Después se borran automáticamente.</p>
+
+      {eliminadas.length===0 && (
+        <div style={{textAlign:"center",padding:"64px 0",color:"#9C8E7A",fontStyle:"italic",fontSize:18}}>La papelera está vacía</div>
+      )}
+
+      {eliminadas.length>0 && (
+        <div className="twrap">
+          <table>
+            <thead><tr>
+              <th>Tipo</th><th>Fecha</th><th>Nº Factura</th><th>Proveedor / Cliente</th>
+              <th>Total</th><th>Eliminada</th><th>Expira en</th><th>Acciones</th>
+            </tr></thead>
+            <tbody>
+              {eliminadas.map((f,i)=>{
+                const horas = horasRestantes(f);
+                const urgente = Number(horas) < 6;
+                return (
+                  <tr key={f.id} className="dr" style={{opacity:.8}}>
+                    <td><span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span></td>
+                    <td>{f.fecha}</td>
+                    <td style={{color:"#9C8E7A",fontSize:14}}>{f.numero_factura}</td>
+                    <td style={{fontWeight:500}}>{f.proveedor_cliente}</td>
+                    <td style={{fontWeight:500,color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>{fmt(f.total)}</td>
+                    <td style={{fontSize:13,color:"#9C8E7A"}}>{new Date(f.eliminado_en).toLocaleString("es-ES")}</td>
+                    <td style={{fontSize:14,color:urgente?"#8B3A2A":"#8B6914",fontWeight:500}}>{horas}h</td>
+                    <td>
+                      <div className="acts">
+                        <button className="ib sv" title="Recuperar" onClick={()=>restoreF(f.id)}>{I.ok}</button>
+                        <button className="ib del" title="Eliminar definitivamente" onClick={()=>deleteForeverF(f.id)}>{I.del}</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 // APP PRINCIPAL
 // ═══════════════════════════════════════════════════════════
 export default function AtelierApp() {
-  const [vista,    setVista]    = useState("subida");
-  const [facturas, setFacturas] = useState([]);
-  const [loading,  setLoading]  = useState(false);
-  const [toast,    setToast]    = useState(null);
+  const [vista,      setVista]      = useState("subida");
+  const [facturas,   setFacturas]   = useState([]);
+  const [historico,  setHistorico]  = useState(()=>{
+    try {
+      const saved = localStorage.getItem("atelier_historico");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [loading,    setLoading]    = useState(false);
+  const [toast,      setToast]      = useState(null);
 
   const showToast = useCallback((msg, type="ok")=>{ setToast({msg,type}); setTimeout(()=>setToast(null),3500); },[]);
 
@@ -1077,11 +1472,17 @@ export default function AtelierApp() {
 
   useEffect(()=>{ cargar(); },[cargar]);
 
+  useEffect(()=>{
+    try { localStorage.setItem("atelier_historico", JSON.stringify(historico)); }
+    catch(e) { console.warn("localStorage full:", e.message); }
+  },[historico]);
+
   const NAV = [
     {id:"subida",   label:"Subir facturas", icon:I.upload},
     {id:"listado",  label:"Listado",         icon:I.list},
     {id:"dashboard",label:"Dashboard",       icon:I.dash},
     {id:"exportar", label:"Exportar",        icon:I.export},
+    {id:"historial",label:"Papelera",        icon:I.del},
   ];
 
   return (
@@ -1105,12 +1506,14 @@ export default function AtelierApp() {
         </aside>
         <main className="main">
           {vista==="subida"    && <ViewSubida    onSaved={cargar} toast={showToast}/>}
-          {vista==="listado"   && <ViewListado   facturas={facturas} loading={loading} onRefresh={cargar} toast={showToast}/>}
-          {vista==="dashboard" && <ViewDashboard facturas={facturas}/>}
+          {vista==="listado"   && <ViewListado   facturas={facturas} historico={historico} setHistorico={setHistorico} loading={loading} onRefresh={cargar} toast={showToast}/>}
+          {vista==="dashboard" && <ViewDashboard facturas={facturas} historico={historico}/>}
           {vista==="exportar"  && <ViewExportar  facturas={facturas} toast={showToast}/>}
+          {vista==="historial" && <ViewHistorial facturas={facturas} onRefresh={cargar} toast={showToast}/>}
         </main>
       </div>
       {toast&&<div className={"toast toast-"+toast.type}>{toast.msg}</div>}
     </>
   );
 }
+
