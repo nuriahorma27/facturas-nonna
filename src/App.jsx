@@ -662,7 +662,7 @@ function ViewSubida({ onSaved, toast }) {
 // ═══════════════════════════════════════════════════════════
 // VISTA: LISTADO
 // ═══════════════════════════════════════════════════════════
-function ViewListado({ facturas, historico, setHistorico, loading, onRefresh, toast }) {
+function ViewListado({ facturas, historico, setHistorico, guardarHistorico, cargandoHist, loading, onRefresh, toast }) {
   const [editingId,setEditingId] = useState(null);
   const [editData, setEditData]  = useState({});
   const [sortField,setSortField] = useState("creado_en");
@@ -745,8 +745,10 @@ function ViewListado({ facturas, historico, setHistorico, loading, onRefresh, to
           });
         });
       });
-      setHistorico(p=>[...p.filter(f=>f._origen!==file.name),...nuevas.map(f=>({...f,_origen:file.name}))]);
-      toast(`Importadas ${nuevas.length} filas de ${file.name} ✓`);
+      const merged = [...historico.filter(f=>f._origen!==file.name),...nuevas.map(f=>({...f,_origen:file.name}))];
+      setHistorico(merged);
+      await guardarHistorico(merged);
+      toast(`Importadas ${nuevas.length} filas de ${file.name} — compartido con el equipo ✓`);
     } catch(err) {
       toast("Error al leer el Excel: "+err.message,"err");
     }
@@ -934,14 +936,15 @@ function ViewListado({ facturas, historico, setHistorico, loading, onRefresh, to
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"12px 18px",background:"rgba(90,100,180,.06)",border:".5px solid rgba(90,100,180,.2)"}}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3A3A8B" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         <span style={{fontSize:14,color:"#3A3A8B",letterSpacing:".1em",textTransform:"uppercase"}}>Datos históricos</span>
-        {historico.length>0&&<span style={{fontSize:13,color:"#5A5A9E",fontStyle:"italic"}}>{historico.length} filas cargadas</span>}
+        {cargandoHist&&<span style={{fontSize:13,color:"#9C8E7A",fontStyle:"italic"}}>Cargando...</span>}
+        {!cargandoHist&&historico.length>0&&<span style={{fontSize:13,color:"#5A5A9E",fontStyle:"italic"}}>{historico.length} filas · compartidas con el equipo</span>}
         <input ref={xlsxRef} type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={importarExcel}/>
         <button className="btn-sm" style={{marginLeft:"auto",borderColor:"rgba(90,100,180,.3)",color:"#3A3A8B"}} onClick={()=>xlsxRef.current.click()} disabled={importando}>
           {importando?"Leyendo...":"+ Subir Excel histórico"}
         </button>
         {historico.length>0&&<>
           <span style={{fontSize:13,color:"#5A5A9E",fontStyle:"italic"}}>{historico.length} filas · guardadas en este navegador</span>
-          <button className="btn-sm" style={{color:"#8B3A2A",borderColor:"rgba(180,60,40,.3)"}} onClick={()=>{if(window.confirm("¿Borrar todos los datos históricos del navegador?"))setHistorico([]);}}>Limpiar</button>
+          <button className="btn-sm" style={{color:"#8B3A2A",borderColor:"rgba(180,60,40,.3)"}} onClick={async()=>{if(window.confirm("¿Borrar todos los datos históricos? Afecta a todo el equipo.")){setHistorico([]);await guardarHistorico([]);}}}>Limpiar</button>
         </>}
       </div>
 
@@ -1081,11 +1084,27 @@ function ViewDashboard({ facturas, historico }) {
   const topProv = useMemo(()=>Object.entries(gas.reduce((acc,f)=>{acc[f.proveedor_cliente]=(acc[f.proveedor_cliente]||0)+Number(f.total);return acc;},{})).map(([n,t])=>({n,t})).sort((a,b)=>b.t-a.t).slice(0,5),[gas]);
   const maxProv = topProv[0]?.t||1;
 
-  const ivaData = Object.entries(TRIM).map(([t,idxs])=>{
-    const tIvaS=idxs.reduce((s,i)=>s+MOCK_2024[i].g*.21,0);
-    const tIvaR=idxs.reduce((s,i)=>s+MOCK_2024[i].i*.21,0);
-    return {t,net:tIvaR-tIvaS};
-  });
+  // IVA trimestral dinámico desde datos reales
+  const ivaData = useMemo(()=>{
+    const anyoActual = new Date().getFullYear().toString();
+    const datosTrimestre = (t) => {
+      const meses = TRIM[t].map(i=>i+1); // meses 1-12
+      const gastosTrim = gas.filter(f=>{
+        const m = parseInt((f.fecha||"").split("/")[1]);
+        const a = (f.fecha||"").split("/")[2];
+        return meses.includes(m) && (!a || a===anyoActual || useMock);
+      });
+      const ingresosTrim = ing.filter(f=>{
+        const m = parseInt((f.fecha||"").split("/")[1]);
+        const a = (f.fecha||"").split("/")[2];
+        return meses.includes(m) && (!a || a===anyoActual || useMock);
+      });
+      const ivaS = gastosTrim.reduce((s,f)=>s+Number(f.iva_importe),0);
+      const ivaR = ingresosTrim.reduce((s,f)=>s+Number(f.iva_importe),0);
+      return {t, ivaS, ivaR, net: ivaR-ivaS};
+    };
+    return ["T1","T2","T3","T4"].map(t=>datosTrimestre(t));
+  },[gas,ing,useMock]);
 
   const barSerie = vista==="gastos"?"gastos":vista==="ingresos"?"ingresos":cSub;
   const barCol   = {gastos:"#C25A4A",ingresos:"#5A8A5E",gastos24:"rgba(194,90,74,.35)",ingresos24:"rgba(90,138,94,.35)"};
@@ -1225,8 +1244,9 @@ function ViewDashboard({ facturas, historico }) {
             {ivaData.map(d=>(
               <div key={d.t} className="iva-c">
                 <div className="iva-lbl">{d.t}</div>
-                <div className="iva-val">{fmtK(d.net)}</div>
+                <div className="iva-val" style={{color:d.net>=0?"#8B3A2A":"#3A6B3E"}}>{fmtK(Math.abs(d.net))}</div>
                 <div className="iva-s">{d.net>=0?"a pagar":"a devolver"}</div>
+                <div style={{fontSize:12,color:"#9C8E7A",marginTop:4}}>↑{fmtK(d.ivaR)} ↓{fmtK(d.ivaS)}</div>
               </div>
             ))}
           </div>
@@ -1446,12 +1466,8 @@ function ViewHistorial({ facturas, onRefresh, toast }) {
 export default function AtelierApp() {
   const [vista,      setVista]      = useState("subida");
   const [facturas,   setFacturas]   = useState([]);
-  const [historico,  setHistorico]  = useState(()=>{
-    try {
-      const saved = localStorage.getItem("atelier_historico");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [historico,  setHistorico]  = useState([]);
+  const [cargandoHist, setCargandoHist] = useState(false);
   const [loading,    setLoading]    = useState(false);
   const [toast,      setToast]      = useState(null);
 
@@ -1472,10 +1488,35 @@ export default function AtelierApp() {
 
   useEffect(()=>{ cargar(); },[cargar]);
 
+  // Cargar histórico desde Supabase Storage al arrancar
   useEffect(()=>{
-    try { localStorage.setItem("atelier_historico", JSON.stringify(historico)); }
-    catch(e) { console.warn("localStorage full:", e.message); }
-  },[historico]);
+    const cargarHistorico = async () => {
+      setCargandoHist(true);
+      try {
+        const supa = await db();
+        const {data} = await supa.storage.from("facturas").download("historico/datos.json");
+        if(data) {
+          const text = await data.text();
+          setHistorico(JSON.parse(text));
+        }
+      } catch(e) {
+        // Si no existe el archivo aún, es normal
+      }
+      setCargandoHist(false);
+    };
+    cargarHistorico();
+  },[]);
+
+  // Guardar histórico en Supabase Storage cuando cambia
+  const guardarHistorico = async (nuevos) => {
+    try {
+      const supa = await db();
+      const blob = new Blob([JSON.stringify(nuevos)], {type:"application/json"});
+      await supa.storage.from("facturas").upload("historico/datos.json", blob, {upsert:true, contentType:"application/json"});
+    } catch(e) {
+      console.warn("Error guardando histórico:", e.message);
+    }
+  };
 
   const NAV = [
     {id:"subida",   label:"Subir facturas", icon:I.upload},
@@ -1506,7 +1547,7 @@ export default function AtelierApp() {
         </aside>
         <main className="main">
           {vista==="subida"    && <ViewSubida    onSaved={cargar} toast={showToast}/>}
-          {vista==="listado"   && <ViewListado   facturas={facturas} historico={historico} setHistorico={setHistorico} loading={loading} onRefresh={cargar} toast={showToast}/>}
+          {vista==="listado"   && <ViewListado   facturas={facturas} historico={historico} setHistorico={setHistorico} guardarHistorico={guardarHistorico} cargandoHist={cargandoHist} loading={loading} onRefresh={cargar} toast={showToast}/>}
           {vista==="dashboard" && <ViewDashboard facturas={facturas} historico={historico}/>}
           {vista==="exportar"  && <ViewExportar  facturas={facturas} toast={showToast}/>}
           {vista==="historial" && <ViewHistorial facturas={facturas} onRefresh={cargar} toast={showToast}/>}
@@ -1516,4 +1557,3 @@ export default function AtelierApp() {
     </>
   );
 }
-
