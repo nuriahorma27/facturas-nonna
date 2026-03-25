@@ -464,7 +464,6 @@ function ViewSubida({ onSaved, toast }) {
         archivo_nombre: item.file.name,
         archivo_url:    publicUrl,
         archivo_tipo:   tipo,
-        trimestre,
         drive_url:      driveUrl || null,
       }]);
       if(dbErr) throw dbErr;
