@@ -1382,9 +1382,23 @@ function ViewExportar({ facturas, toast }) {
 // ═══════════════════════════════════════════════════════════
 // VISTA: HISTORIAL / PAPELERA
 // ═══════════════════════════════════════════════════════════
-function ViewHistorial({ facturas, onRefresh, toast }) {
-  const eliminadas = facturas.filter(f=>f.eliminado_en);
+function ViewHistorial({ onRefresh, toast }) {
+  const [eliminadas, setEliminadas] = useState([]);
+  const [cargando, setCargando] = useState(true);
   const ahora = new Date();
+
+  const cargarEliminadas = useCallback(async()=>{
+    setCargando(true);
+    try {
+      const supa = await db();
+      const {data,error} = await supa.from("facturas").select("*").not("eliminado_en","is",null).order("eliminado_en",{ascending:false});
+      if(error) throw error;
+      setEliminadas(data||[]);
+    } catch(e) { setEliminadas([]); }
+    setCargando(false);
+  },[]);
+
+  useEffect(()=>{ cargarEliminadas(); },[cargarEliminadas]);
 
   const horasRestantes = (f) => {
     const eliminado = new Date(f.eliminado_en);
@@ -1399,6 +1413,7 @@ function ViewHistorial({ facturas, onRefresh, toast }) {
       if(error) throw error;
       toast("Factura recuperada ✓");
       onRefresh();
+      cargarEliminadas();
     } catch(e) { toast("Error: "+e.message,"err"); }
   };
 
@@ -1409,7 +1424,7 @@ function ViewHistorial({ facturas, onRefresh, toast }) {
       const {error} = await supa.from("facturas").delete().eq("id", id);
       if(error) throw error;
       toast("Eliminada definitivamente");
-      onRefresh();
+      cargarEliminadas();
     } catch(e) { toast("Error: "+e.message,"err"); }
   };
 
@@ -1419,11 +1434,12 @@ function ViewHistorial({ facturas, onRefresh, toast }) {
       <h1 className="view-title">Historial <em>eliminadas</em></h1>
       <p style={{fontSize:16,color:"#9C8E7A",fontStyle:"italic",marginBottom:28}}>Las facturas eliminadas se conservan 48 horas. Después se borran automáticamente.</p>
 
-      {eliminadas.length===0 && (
-        <div style={{textAlign:"center",padding:"64px 0",color:"#9C8E7A",fontStyle:"italic",fontSize:18}}>La papelera está vacía</div>
+      {cargando && <div style={{textAlign:"center",padding:"64px 0",color:"#9C8E7A",fontStyle:"italic",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",gap:12}}><div className="spin"/>Cargando papelera...</div>}
+      {!cargando && eliminadas.length===0 && (
+        <div style={{textAlign:"center",padding:"64px 0",color:"#9C8E7A",fontStyle:"italic",fontSize:18}}>La papelera está vacía ✓</div>
       )}
 
-      {eliminadas.length>0 && (
+      {!cargando && eliminadas.length>0 && (
         <div className="twrap">
           <table>
             <thead><tr>
@@ -1550,7 +1566,7 @@ export default function AtelierApp() {
           {vista==="listado"   && <ViewListado   facturas={facturas} historico={historico} setHistorico={setHistorico} guardarHistorico={guardarHistorico} cargandoHist={cargandoHist} loading={loading} onRefresh={cargar} toast={showToast}/>}
           {vista==="dashboard" && <ViewDashboard facturas={facturas} historico={historico}/>}
           {vista==="exportar"  && <ViewExportar  facturas={facturas} toast={showToast}/>}
-          {vista==="historial" && <ViewHistorial facturas={facturas} onRefresh={cargar} toast={showToast}/>}
+          {vista==="historial" && <ViewHistorial onRefresh={cargar} toast={showToast}/>}
         </main>
       </div>
       {toast&&<div className={"toast toast-"+toast.type}>{toast.msg}</div>}
