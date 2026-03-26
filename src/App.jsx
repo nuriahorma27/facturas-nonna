@@ -6,7 +6,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { createClient } from "@supabase/supabase-js";
 const _sb = createClient(
   "https://jtqfxakabthzakmhncrw.supabase.co",
-  "sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p"
+  "sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storageKey: "atelier_session",
+    }
+  }
 );
 async function db() { return _sb; }
 
@@ -1075,21 +1082,21 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const deleteF=async(id)=>{
     // Si es histórico, borrarlo del array de históricos
     if(String(id).startsWith("hist_")) {
-      if(!window.confirm("¿Eliminar este registro histórico?")) return;
+      if(!window.confirm("¿Eliminar este registro?")) return;
       const nuevos = historico.filter(f=>f.id!==id);
       setHistorico(nuevos);
       await guardarHistorico(nuevos);
-      toast("Registro histórico eliminado ✓");
+      toast("Eliminado ✓");
       return;
     }
-    if(!window.confirm("¿Mover esta factura a la papelera? Podrás recuperarla durante 48h."))return;
+    if(!window.confirm("¿Mover esta factura a la papelera?"))return;
     try{
       const supa=await db();
-      const{error}=await supa.from("facturas").update({eliminado_en: new Date().toISOString()}).eq("id",id);
+      const{error}=await supa.from("facturas").update({eliminado_en: new Date().toISOString()}).eq("id",String(id));
       if(error)throw error;
       toast("Movida a la papelera ✓");
       onRefresh();
-    }catch(e){toast("Error: "+e.message,"err");}
+    }catch(e){toast("Error al eliminar: "+e.message,"err");}
   };
 
   const restoreF=async(id)=>{
@@ -1142,8 +1149,17 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
 
   const tG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
   const tI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
-  const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.iva_importe),0);
-  const ivaI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.iva_importe),0);
+  const calcIvaL = (f) => {
+    const iv = Number(f.iva_importe);
+    if(iv>0) return iv;
+    const tot = Number(f.total)||0;
+    const base = Number(f.base_imponible)||0;
+    if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
+    if(tot>0) return Math.round((tot - tot/1.21)*100)/100;
+    return 0;
+  };
+  const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+calcIvaL(f),0);
+  const ivaI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+calcIvaL(f),0);
   const nG=filtered.filter(f=>f.tipo==="gasto").length;
   const nI=filtered.filter(f=>f.tipo==="ingreso").length;
   const pend=filtered.filter(f=>f.estado==="pendiente").length;
@@ -1350,8 +1366,17 @@ function ViewDashboard({ facturas, historico }) {
   const tG=gas.reduce((s,f)=>s+Number(f.total),0);
   const tI=ing.reduce((s,f)=>s+Number(f.total),0);
   const bal=tI-tG;
-  const ivaR=ing.reduce((s,f)=>s+Number(f.iva_importe),0);
-  const ivaS=gas.reduce((s,f)=>s+Number(f.iva_importe),0);
+  const calcIvaF = (f) => {
+    const iv = Number(f.iva_importe);
+    if(iv>0) return iv;
+    const tot = Number(f.total)||0;
+    const base = Number(f.base_imponible)||0;
+    if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
+    if(tot>0) return Math.round((tot - tot/1.21)*100)/100;
+    return 0;
+  };
+  const ivaR=ing.reduce((s,f)=>s+calcIvaF(f),0);
+  const ivaS=gas.reduce((s,f)=>s+calcIvaF(f),0);
   const ivaN=ivaR-ivaS;
   const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente");
 
@@ -1400,8 +1425,18 @@ function ViewDashboard({ facturas, historico }) {
         const a = (f.fecha||"").split("/")[2];
         return meses.includes(m) && (!a || a===anyoActual || useMock);
       });
-      const ivaS = gastosTrim.reduce((s,f)=>s+Number(f.iva_importe),0);
-      const ivaR = ingresosTrim.reduce((s,f)=>s+Number(f.iva_importe),0);
+      const calcIva = (f) => {
+        const iv = Number(f.iva_importe);
+        if(iv>0) return iv;
+        // Calcular desde total si no hay IVA guardado
+        const tot = Number(f.total)||0;
+        const base = Number(f.base_imponible)||0;
+        if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
+        if(tot>0) return Math.round((tot - tot/1.21)*100)/100;
+        return 0;
+      };
+      const ivaS = gastosTrim.reduce((s,f)=>s+calcIva(f),0);
+      const ivaR = ingresosTrim.reduce((s,f)=>s+calcIva(f),0);
       return {t, ivaS, ivaR, net: ivaR-ivaS};
     };
     return ["T1","T2","T3","T4"].map(t=>datosTrimestre(t));
@@ -1494,7 +1529,18 @@ function ViewDashboard({ facturas, historico }) {
           <div className="ch-sub">{vista==="ingresos"?"Distribución ingresos":"Distribución gastos"}</div>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={catData} cx="50%" cy="50%" innerRadius="40%" outerRadius="70%" paddingAngle={3} dataKey="value" label={false} labelLine={false}>
+              <Pie data={catData} cx="50%" cy="50%" innerRadius="40%" outerRadius="70%" paddingAngle={3} dataKey="value"
+                label={({cx,cy,midAngle,innerRadius,outerRadius,percent,name})=>{
+                  const RADIAN=Math.PI/180;
+                  const radius=innerRadius+(outerRadius-innerRadius)*1.5;
+                  const x=cx+radius*Math.cos(-midAngle*RADIAN);
+                  const y=cy+radius*Math.sin(-midAngle*RADIAN);
+                  if(percent<0.04) return null;
+                  return <text x={x} y={y} textAnchor={x>cx?"start":"end"} dominantBaseline="central" style={{fontFamily:"Cormorant Garamond,serif",fontSize:13,fill:"#2C2417",fontWeight:500}}>
+                    {`${(percent*100).toFixed(0)}%`}
+                  </text>;
+                }}
+                labelLine={{stroke:"#D4C5A9",strokeWidth:1}}>
                 {catData.map((_,i)=><Cell key={i} fill={CAT_COLORS[i%CAT_COLORS.length]}/>)}
               </Pie>
               <Tooltip content={({active,payload})=>{
