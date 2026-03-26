@@ -710,6 +710,9 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const [sortDir,  setSortDir]   = useState("desc");
   const [visor,    setVisor]     = useState(null);
   const [exporting,setExporting] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const toggleSelect = (id) => setSelected(p=>{ const n=new Set(p); n.has(id)?n.delete(id):n.add(id); return n; });
+  const selectAll = () => setSelected(filtered.length===selected.size ? new Set() : new Set(filtered.map(f=>f.id)));
   const [filters,  setFilters]   = useState({busqueda:"",tipo:"",categorias:[],estado:"",fechaDesde:"",fechaHasta:""});
   const [vistaTab, setVistaTab]  = useState("todas");
   const _hoy = new Date();
@@ -1113,6 +1116,30 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const downloadFile=(f)=>{ if(f.archivo_url)window.open(f.archivo_url,"_blank"); else window.alert("Sin archivo adjunto."); };
   const exportExcel=()=>{setExporting(true);try{buildExcel(facturas);}catch(e){window.alert("Error: "+e.message);}setExporting(false);};
 
+  const deleteSelected = async() => {
+    if(selected.size===0) return;
+    if(!window.confirm(`¿Eliminar ${selected.size} factura${selected.size>1?"s":""}?`)) return;
+    const ids = [...selected];
+    const histIds = ids.filter(id=>String(id).startsWith("hist_"));
+    const supaIds = ids.filter(id=>!String(id).startsWith("hist_"));
+    // Borrar históricos
+    if(histIds.length>0) {
+      const nuevos = historico.filter(f=>!histIds.includes(f.id));
+      setHistorico(nuevos);
+      await guardarHistorico(nuevos);
+    }
+    // Borrar de Supabase (papelera)
+    if(supaIds.length>0) {
+      try {
+        const supa = await db();
+        await supa.from("facturas").update({eliminado_en: new Date().toISOString()}).in("id", supaIds);
+        onRefresh();
+      } catch(e) { toast("Error: "+e.message,"err"); return; }
+    }
+    setSelected(new Set());
+    toast(`${ids.length} factura${ids.length>1?"s":""} eliminadas ✓`);
+  };
+
   const tG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
   const tI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
   const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.iva_importe),0);
@@ -1126,7 +1153,8 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
     <div className="view">
       <div className="page-header" style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:28}}>
         <div><div className="eyebrow">Módulo 3</div><h1 className="view-title" style={{marginBottom:0}}>Listado de <em>facturas</em></h1></div>
-        <div style={{display:"flex",gap:9}}>
+        <div style={{display:"flex",gap:9,flexWrap:"wrap"}}>
+          {selected.size>0&&<button className="btn-out" style={{borderColor:"rgba(180,30,20,.4)",color:"#8B1A0A"}} onClick={deleteSelected}>{I.del}<span>Eliminar {selected.size}</span></button>}
           <button className="btn-out" onClick={()=>window.alert("ZIP disponible en Netlify.")}>{I.zip}<span>ZIP</span></button>
           <button className="btn-ink" onClick={exportExcel} disabled={exporting}>{I.xl}<span>{exporting?"Generando...":"Exportar Excel"}</span></button>
         </div>
@@ -1223,6 +1251,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
       <div className="twrap">
         <table>
           <thead><tr>
+            <th style={{width:36}}><input type="checkbox" onChange={selectAll} checked={selected.size===filtered.length&&filtered.length>0} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></th>
             <th>Tipo</th>
             <th className={`sort${sortField==="fecha"?" sorted":""}`} onClick={()=>toggleSort("fecha")}>Fecha<Arr f="fecha"/></th>
             <th>Nº Factura</th><th>Proveedor / Cliente</th><th className="col-hide-mobile">Categoría</th>
@@ -1235,7 +1264,8 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
             {!loading&&filtered.map((f,i)=>{
               const isE=editingId===f.id,d=isE?editData:f;
               return(
-                <tr key={f.id} className={"dr"+(isE?" editing":"")} style={{animationDelay:i*.025+"s"}}>
+                <tr key={f.id} className={"dr"+(isE?" editing":"")} style={{animationDelay:i*.025+"s",background:selected.has(f.id)?"rgba(184,150,46,.08)":""}}>
+                  <td style={{textAlign:"center"}}><input type="checkbox" checked={selected.has(f.id)} onChange={()=>toggleSelect(f.id)} onClick={e=>e.stopPropagation()} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></td>
                   <td>
                     {isE?<select className="is" value={d.tipo} onChange={e=>setEditData(p=>({...p,tipo:e.target.value}))}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select>
                     :<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
