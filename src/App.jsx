@@ -1011,6 +1011,15 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const cancelEdit=()=>{setEditingId(null);setEditData({});};
 
   const saveEdit = async()=>{
+    // Si es histórico, actualizar en el array local
+    if(String(editingId).startsWith("hist_")) {
+      const nuevos = historico.map(f=>f.id===editingId?{...f,...editData}:f);
+      setHistorico(nuevos);
+      await guardarHistorico(nuevos);
+      setEditingId(null);
+      toast("Registro histórico actualizado ✓");
+      return;
+    }
     try{
       const supa=await db();
       const{error}=await supa.from("facturas").update({tipo:editData.tipo,fecha:editData.fecha,numero_factura:editData.numero_factura,proveedor_cliente:editData.proveedor_cliente,nif_cif:editData.nif_cif,categoria:editData.categoria,total:Number(editData.total),iva_porcentaje:Number(editData.iva_porcentaje),estado:editData.estado}).eq("id",editingId);
@@ -1020,7 +1029,16 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   };
 
   const deleteF=async(id)=>{
-    if(!window.confirm("¿Mover esta factura a la papelera? Podrás recuperarla en Historial durante 48h."))return;
+    // Si es histórico, borrarlo del array de históricos
+    if(String(id).startsWith("hist_")) {
+      if(!window.confirm("¿Eliminar este registro histórico?")) return;
+      const nuevos = historico.filter(f=>f.id!==id);
+      setHistorico(nuevos);
+      await guardarHistorico(nuevos);
+      toast("Registro histórico eliminado ✓");
+      return;
+    }
+    if(!window.confirm("¿Mover esta factura a la papelera? Podrás recuperarla durante 48h."))return;
     try{
       const supa=await db();
       const{error}=await supa.from("facturas").update({eliminado_en: new Date().toISOString()}).eq("id",id);
@@ -1182,7 +1200,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     :<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                       <span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span>
                       {f.es_duplicada&&<span className="badge" style={{background:"rgba(180,30,20,.1)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.4)"}}>⚠ Dup.</span>}
-                      {f._historico&&<span className="badge" style={{background:"rgba(90,100,180,.1)",color:"#3A3A8B",border:".5px solid rgba(90,100,180,.3)"}}>Histórico</span>}
+                      
                     </div>}
                   </td>
                   <td>{isE?<input className="ii" value={d.fecha||""} onChange={e=>setEditData(p=>({...p,fecha:e.target.value}))} style={{width:95}}/>:f.fecha}</td>
@@ -1195,7 +1213,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                   <td><span className={"file-tag"+(f.archivo_nombre?" has":"")}>{f.archivo_tipo==="image"?<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>:<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>}{f.archivo_tipo?f.archivo_tipo.toUpperCase():"—"}</span></td>
                   <td><div className="acts">
                     {isE?<><button className="ib sv" onClick={saveEdit}>{I.ok}</button><button className="ib" onClick={cancelEdit}>{I.x}</button></>
-                    :<><button className="ib eye" onClick={()=>setVisor(f)}>{I.eye}</button><button className="ib dl" onClick={()=>downloadFile(f)}>{I.down}</button><button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button><button className="ib del" onClick={()=>deleteF(f.id)}>{I.del}</button></>}
+                    :<><button className="ib eye" onClick={()=>setVisor(f)}>{I.eye}</button>{!f._historico&&<button className="ib dl" onClick={()=>downloadFile(f)}>{I.down}</button>}<button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button><button className="ib del" onClick={()=>deleteF(f.id)}>{I.del}</button></>}
                   </div></td>
                 </tr>
               );
@@ -1724,19 +1742,28 @@ export default function AtelierApp() {
 
   useEffect(()=>{ cargar(); },[cargar]);
 
-  // Cargar histórico desde Supabase Storage al arrancar
+  // Cargar histórico — primero localStorage (rápido), luego Supabase Storage (compartido)
   useEffect(()=>{
     const cargarHistorico = async () => {
       setCargandoHist(true);
+      // Carga inmediata desde localStorage
+      try {
+        const local = localStorage.getItem("atelier_historico_v2");
+        if(local) setHistorico(JSON.parse(local));
+      } catch(e) {}
+      // Luego intentar Supabase Storage (puede tener versión más reciente de otro usuario)
       try {
         const supa = await db();
         const {data} = await supa.storage.from("facturas").download("historico/datos.json");
         if(data) {
           const text = await data.text();
-          setHistorico(JSON.parse(text));
+          const remoto = JSON.parse(text);
+          setHistorico(remoto);
+          // Actualizar localStorage con la versión remota
+          try { localStorage.setItem("atelier_historico_v2", JSON.stringify(remoto)); } catch(e) {}
         }
       } catch(e) {
-        // Si no existe el archivo aún, es normal
+        // Si no existe en Storage, usamos el localStorage
       }
       setCargandoHist(false);
     };
@@ -1745,12 +1772,15 @@ export default function AtelierApp() {
 
   // Guardar histórico en Supabase Storage cuando cambia
   const guardarHistorico = async (nuevos) => {
+    // Guardar en localStorage como backup rápido
+    try { localStorage.setItem("atelier_historico_v2", JSON.stringify(nuevos)); } catch(e) {}
+    // Guardar en Supabase Storage para compartir con el equipo
     try {
       const supa = await db();
       const blob = new Blob([JSON.stringify(nuevos)], {type:"application/json"});
       await supa.storage.from("facturas").upload("historico/datos.json", blob, {upsert:true, contentType:"application/json"});
     } catch(e) {
-      console.warn("Error guardando histórico:", e.message);
+      console.warn("Error guardando histórico en Storage:", e.message);
     }
   };
 
