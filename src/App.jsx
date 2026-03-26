@@ -165,7 +165,7 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .fi:focus,.fs:focus{border-bottom-color:#B8962E}
 .fi::placeholder{color:#9C8E7A;font-style:italic}
 .twrap{background:#F5F0E8;border:.5px solid #D4C5A9;overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:980px}
+table{width:100%;border-collapse:collapse;min-width:700px}
 th{padding:14px 14px;text-align:left;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#2C2417;font-weight:600;border-bottom:1.5px solid #B8962E;background:#EDE5D0;white-space:nowrap;user-select:none}
 th.sort{cursor:pointer;transition:color .2s}
 th.sort:hover,th.sorted{color:#8B6914}
@@ -293,10 +293,36 @@ td{padding:14px 14px;font-size:16px;color:#2C2417;vertical-align:middle}
   .sidebar{width:56px}.sb-name,.sb-sub,.sb-item span{display:none}
   .sb-item{padding:14px;justify-content:center}.sb-logo{padding:16px;align-items:center;display:flex}
   .sb-mono{margin:0}.sb-footer{display:none}
-  .view{padding:32px 18px}
+  .view{padding:20px 14px}
   .charts-grid{grid-template-columns:1fr}.full{grid-column:1}
   .modal-body{flex-direction:column}.modal-data{width:100%}
   .iva-grid{grid-template-columns:1fr 1fr}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .rc-grid{grid-template-columns:1fr 1fr!important}
+  .fl-bar{flex-direction:column;gap:10px}
+  .fg{min-width:unset!important;width:100%}
+  .pills{gap:6px}
+  .pill{padding:6px 12px;font-size:13px}
+  .view-title{font-size:28px}
+  .page-header{flex-direction:column;align-items:flex-start;gap:12px}
+  .tabs{flex-wrap:wrap}
+  .tab{padding:10px 16px;font-size:14px}
+  .period-tabs{flex-wrap:wrap;gap:6px}
+  .exp-bar{flex-direction:column;align-items:flex-start}
+  .sum-grid{grid-template-columns:1fr 1fr}
+  .ch-subtabs{flex-wrap:wrap}
+  .charts-grid .ch-card{padding:18px 14px}
+}
+@media(max-width:480px){
+  .sidebar{display:none}
+  .main{width:100vw}
+  .view{padding:16px 12px}
+  .kpi-grid{grid-template-columns:1fr}
+  .iva-grid{grid-template-columns:1fr 1fr}
+  table{min-width:600px!important}
+  .twrap{-webkit-overflow-scrolling:touch}
+  .btn-ink span{display:none}
+  .btn-ink svg{margin:0}
 }
 `;
 
@@ -1418,14 +1444,16 @@ function ViewDashboard({ facturas, historico }) {
               <Pie data={catData} cx="50%" cy="50%" innerRadius="42%" outerRadius="72%" paddingAngle={3} dataKey="value">
                 {catData.map((_,i)=><Cell key={i} fill={CAT_COLORS[i%CAT_COLORS.length]}/>)}
               </Pie>
-              <Tooltip content={({active,payload})=>{
-                if(!active||!payload?.length) return null;
-                const p=payload[0];
-                return <div style={{background:"#F5F0E8",border:".5px solid #B8962E",padding:"10px 14px",fontFamily:"'Cormorant Garamond',Georgia,serif",boxShadow:"0 4px 16px rgba(44,36,23,.15)"}}>
-                  <div style={{fontSize:13,letterSpacing:".1em",textTransform:"uppercase",color:"#8B6914",marginBottom:4}}>{p.name}</div>
-                  <div style={{fontSize:16,fontWeight:500,color:"#2C2417"}}>{fmt(p.value)}</div>
-                </div>;
-              }}/>
+              <Tooltip
+                wrapperStyle={{background:"transparent",border:"none",boxShadow:"none"}}
+                content={({active,payload})=>{
+                  if(!active||!payload?.length) return null;
+                  const p=payload[0];
+                  return <div style={{background:"#F5F0E8",border:".5px solid #B8962E",padding:"10px 14px",fontFamily:"'Cormorant Garamond',Georgia,serif",boxShadow:"0 4px 16px rgba(44,36,23,.15)",borderRadius:0}}>
+                    <div style={{fontSize:13,letterSpacing:".1em",textTransform:"uppercase",color:"#8B6914",marginBottom:4}}>{p.name}</div>
+                    <div style={{fontSize:16,fontWeight:500,color:"#2C2417"}}>{fmt(p.value)}</div>
+                  </div>;
+                }}/>
             </PieChart>
           </ResponsiveContainer>
           <div style={{display:"flex",flexWrap:"wrap",gap:"5px 14px",marginTop:8}}>
