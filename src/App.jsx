@@ -165,15 +165,15 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .fi:focus,.fs:focus{border-bottom-color:#B8962E}
 .fi::placeholder{color:#9C8E7A;font-style:italic}
 .twrap{background:#F5F0E8;border:.5px solid #D4C5A9;overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:700px}
-th{padding:14px 14px;text-align:left;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:#2C2417;font-weight:600;border-bottom:1.5px solid #B8962E;background:#EDE5D0;white-space:nowrap;user-select:none}
+table{width:100%;border-collapse:collapse;table-layout:auto}
+th{padding:10px 10px;text-align:left;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#2C2417;font-weight:600;border-bottom:1.5px solid #B8962E;background:#EDE5D0;white-space:nowrap;user-select:none}
 th.sort{cursor:pointer;transition:color .2s}
 th.sort:hover,th.sorted{color:#8B6914}
 tr.dr{border-bottom:.5px solid #D4C5A9;transition:background .2s}
 tr.dr:last-child{border-bottom:none}
 tr.dr:hover{background:#FAF7F0}
 tr.editing{background:#FFFDF7;outline:1px solid #B8962E}
-td{padding:14px 14px;font-size:16px;color:#2C2417;vertical-align:middle}
+td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .ii{background:transparent;border:none;border-bottom:1px solid #B8962E;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:2px 0;width:100%}
 .is{background:transparent;border:none;border-bottom:1px solid #B8962E;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;outline:none;padding:2px 0;width:100%;-webkit-appearance:none;cursor:pointer}
 .acts{display:flex;gap:3px;align-items:center}
@@ -312,6 +312,8 @@ td{padding:14px 14px;font-size:16px;color:#2C2417;vertical-align:middle}
   .sum-grid{grid-template-columns:1fr 1fr}
   .ch-subtabs{flex-wrap:wrap}
   .charts-grid .ch-card{padding:18px 14px}
+  .col-hide-mobile{display:none}
+  th,td{padding:8px 8px;font-size:13px}
 }
 @media(max-width:480px){
   .sidebar{display:none}
@@ -319,10 +321,11 @@ td{padding:14px 14px;font-size:16px;color:#2C2417;vertical-align:middle}
   .view{padding:16px 12px}
   .kpi-grid{grid-template-columns:1fr}
   .iva-grid{grid-template-columns:1fr 1fr}
-  table{min-width:600px!important}
+  table{width:100%}
   .twrap{-webkit-overflow-scrolling:touch}
   .btn-ink span{display:none}
   .btn-ink svg{margin:0}
+  .col-hide-mobile{display:none}
 }
 `;
 
@@ -486,14 +489,26 @@ function ViewSubida({ onSaved, toast }) {
     try {
       const supa = await db();
 
-      // Comprobar duplicado por número de factura (solo warning, no bloquea)
+      // Comprobar duplicado
       let esDuplicada = false;
       if (data.numero_factura) {
-        const {data:existing} = await supa.from("facturas").select("id").eq("numero_factura", data.numero_factura).limit(1);
+        const {data:existing} = await supa.from("facturas").select("id")
+          .eq("numero_factura", data.numero_factura).limit(1);
         if (existing && existing.length > 0) {
           esDuplicada = true;
           setResults(p=>({...p,[item.id]:{...p[item.id],_duplicado:true}}));
-          toast("⚠️ Posible duplicada: "+data.numero_factura,"err");
+          toast(`⚠️ Posible duplicado: ${data.numero_factura}`,"err");
+        }
+      } else if (data.tipo==="ingreso" && data.proveedor_cliente && data.total) {
+        // Para ingresos sin número de factura, comprobar por cliente + importe
+        const {data:existing} = await supa.from("facturas").select("id")
+          .eq("tipo","ingreso")
+          .eq("proveedor_cliente", data.proveedor_cliente)
+          .eq("total", Number(data.total)).limit(1);
+        if (existing && existing.length > 0) {
+          esDuplicada = true;
+          setResults(p=>({...p,[item.id]:{...p[item.id],_duplicado:true}}));
+          toast(`⚠️ Posible ingreso duplicado: ${data.proveedor_cliente} — ${fmt(data.total)}`,"err");
         }
       }
 
@@ -1210,9 +1225,9 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
           <thead><tr>
             <th>Tipo</th>
             <th className={`sort${sortField==="fecha"?" sorted":""}`} onClick={()=>toggleSort("fecha")}>Fecha<Arr f="fecha"/></th>
-            <th>Nº Factura</th><th>Proveedor / Cliente</th><th>Categoría</th>
+            <th>Nº Factura</th><th>Proveedor / Cliente</th><th className="col-hide-mobile">Categoría</th>
             <th className={`sort${sortField==="total"?" sorted":""}`} onClick={()=>toggleSort("total")}>Total<Arr f="total"/></th>
-            <th>IVA</th><th>Estado</th><th>Archivo</th><th>Acciones</th>
+            <th className="col-hide-mobile">IVA</th><th>Estado</th><th className="col-hide-mobile">Archivo</th><th>Acciones</th>
           </tr></thead>
           <tbody>
             {loading&&<tr><td colSpan={10}><div className="loading-row"><div className="spin"/><span>Cargando desde Supabase...</span></div></td></tr>}
@@ -1226,17 +1241,16 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     :<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                       <span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span>
                       {f.es_duplicada&&<span className="badge" style={{background:"rgba(180,30,20,.1)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.4)"}}>⚠ Dup.</span>}
-                      
                     </div>}
                   </td>
                   <td>{isE?<input className="ii" value={d.fecha||""} onChange={e=>setEditData(p=>({...p,fecha:e.target.value}))} style={{width:95}}/>:f.fecha}</td>
                   <td style={{color:"#9C8E7A",fontSize:13}}>{isE?<input className="ii" value={d.numero_factura||""} onChange={e=>setEditData(p=>({...p,numero_factura:e.target.value}))}/>:f.numero_factura}</td>
                   <td style={{fontWeight:500}}>{isE?<input className="ii" value={d.proveedor_cliente||""} onChange={e=>setEditData(p=>({...p,proveedor_cliente:e.target.value}))}/>:f.proveedor_cliente}</td>
-                  <td style={{fontSize:12,color:"#5C4A2A"}}>{isE?<select className="is" value={d.categoria||""} onChange={e=>setEditData(p=>({...p,categoria:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select>:f.categoria}</td>
+                  <td className="col-hide-mobile" style={{fontSize:12,color:"#5C4A2A"}}>{isE?<select className="is" value={d.categoria||""} onChange={e=>setEditData(p=>({...p,categoria:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select>:f.categoria}</td>
                   <td style={{fontWeight:500,color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>{isE?<input className="ii" type="number" value={d.total||0} onChange={e=>setEditData(p=>({...p,total:e.target.value}))} style={{width:85}}/>:fmt(f.total)}</td>
-                  <td style={{fontSize:13,color:"#9C8E7A"}}>{isE?<input className="ii" value={d.iva_porcentaje||21} onChange={e=>setEditData(p=>({...p,iva_porcentaje:e.target.value}))} style={{width:36}}/>:(f.iva_porcentaje||21)+"%"}</td>
+                  <td className="col-hide-mobile" style={{fontSize:13,color:"#9C8E7A"}}>{isE?<input className="ii" value={d.iva_porcentaje||21} onChange={e=>setEditData(p=>({...p,iva_porcentaje:e.target.value}))} style={{width:36}}/>:(f.iva_porcentaje||21)+"%"}</td>
                   <td>{isE?<select className="is" value={d.estado||"pendiente"} onChange={e=>setEditData(p=>({...p,estado:e.target.value}))}><option value="pagada">Pagada</option><option value="pendiente">Pendiente</option></select>:<span className={"badge badge-"+f.estado}><span className={"e-dot dot-"+f.estado}/>{f.estado}</span>}</td>
-                  <td><span className={"file-tag"+(f.archivo_nombre?" has":"")}>{f.archivo_tipo==="image"?<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>:<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>}{f.archivo_tipo?f.archivo_tipo.toUpperCase():"—"}</span></td>
+                  <td className="col-hide-mobile"><span className={"file-tag"+(f.archivo_nombre?" has":"")}>{f.archivo_tipo==="image"?<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>:<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>}{f.archivo_tipo?f.archivo_tipo.toUpperCase():"—"}</span></td>
                   <td><div className="acts">
                     {isE?<><button className="ib sv" onClick={saveEdit}>{I.ok}</button><button className="ib" onClick={cancelEdit}>{I.x}</button></>
                     :<><button className="ib eye" onClick={()=>setVisor(f)}>{I.eye}</button>{!f._historico&&<button className="ib dl" onClick={()=>downloadFile(f)}>{I.down}</button>}<button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button><button className="ib del" onClick={()=>deleteF(f.id)}>{I.del}</button></>}
@@ -1366,19 +1380,28 @@ function ViewDashboard({ facturas, historico }) {
   const barSerie = vista==="gastos"?"gastos":vista==="ingresos"?"ingresos":cSub;
   const barCol   = {gastos:"#C25A4A",ingresos:"#5A8A5E",gastos24:"rgba(194,90,74,.35)",ingresos24:"rgba(90,138,94,.35)"};
 
+  // Calcular totales año anterior desde histórico
+  const anyoAnt = String(new Date().getFullYear()-1);
+  const datosAntI = (historico||[]).filter(f=>f._anyo===anyoAnt&&f.tipo==="ingreso");
+  const datosAntG = (historico||[]).filter(f=>f._anyo===anyoAnt&&f.tipo==="gasto");
+  const tIant = datosAntI.reduce((s,f)=>s+Number(f.total),0);
+  const tGant = datosAntG.reduce((s,f)=>s+Number(f.total),0);
+  const deltaI = tIant>0?((tI-tIant)/tIant*100).toFixed(1):null;
+  const deltaG = tGant>0?((tG-tGant)/tGant*100).toFixed(1):null;
+
   const kpis = vista==="resumen"?[
-    {lbl:"Total ingresos",val:fmt(tI),sub:`vs ${fmt(61000)} año anterior`,delta:"11.8",up:true,ac:"#5A8A5E",cl:"#3A6B3E"},
-    {lbl:"Total gastos",val:fmt(tG),sub:`vs ${fmt(42000)} año anterior`,delta:"12.4",up:false,ac:"#C25A4A",cl:"#8B3A2A"},
+    {lbl:"Total ingresos",val:fmt(tI),sub:tIant>0?`vs ${fmt(tIant)} año anterior`:"Sin datos año anterior",delta:deltaI,up:deltaI!==null?Number(deltaI)>=0:null,ac:"#5A8A5E",cl:"#3A6B3E"},
+    {lbl:"Total gastos",val:fmt(tG),sub:tGant>0?`vs ${fmt(tGant)} año anterior`:"Sin datos año anterior",delta:deltaG,up:deltaG!==null?Number(deltaG)<=0:null,ac:"#C25A4A",cl:"#8B3A2A"},
     {lbl:"Balance",val:fmt(bal),sub:"ingresos − gastos",ac:bal>=0?"#5A8A5E":"#C25A4A",cl:bal>=0?"#3A6B3E":"#8B3A2A"},
     {lbl:"IVA neto a pagar",val:fmt(Math.abs(ivaN)),sub:`↑ Repercutido: ${fmt(ivaR)}\n↓ Soportado: ${fmt(ivaS)}`,ac:"#8B6914",cl:"#8B6914"},
     {lbl:"Facturas pendientes",val:pend.length,sub:fmt(pend.reduce((s,f)=>s+Number(f.total),0))+" en espera",ac:"#B8962E",cl:"#8B6914"},
   ]:vista==="gastos"?[
-    {lbl:"Total gastos",val:fmt(tG),sub:`vs ${fmt(42000)} año anterior`,delta:"12.4",up:false,ac:"#C25A4A",cl:"#8B3A2A"},
+    {lbl:"Total gastos",val:fmt(tG),sub:tGant>0?`vs ${fmt(tGant)} año anterior`:"Sin datos año anterior",delta:deltaG,up:deltaG!==null?Number(deltaG)<=0:null,ac:"#C25A4A",cl:"#8B3A2A"},
     {lbl:"Mayor categoría",val:catData[0]?.name||"—",sub:fmt(catData[0]?.value||0),ac:"#B8962E",cl:"#8B6914"},
     {lbl:"Facturas gasto",val:gas.length,sub:"en el período",ac:"#2C2417",cl:"#2C2417"},
     {lbl:"IVA soportado",val:fmt(ivaS),sub:"deducible",ac:"#7A6A50",cl:"#5C4A2A"},
   ]:[
-    {lbl:"Total ingresos",val:fmt(tI),sub:`vs ${fmt(61000)} año anterior`,delta:"11.8",up:true,ac:"#5A8A5E",cl:"#3A6B3E"},
+    {lbl:"Total ingresos",val:fmt(tI),sub:tIant>0?`vs ${fmt(tIant)} año anterior`:"Sin datos año anterior",delta:deltaI,up:deltaI!==null?Number(deltaI)>=0:null,ac:"#5A8A5E",cl:"#3A6B3E"},
     {lbl:"Ticket medio",val:fmt(ing.length>0?tI/ing.length:0),sub:"por factura",ac:"#B8962E",cl:"#8B6914"},
     {lbl:"Facturas ingreso",val:ing.length,sub:"en el período",ac:"#2C2417",cl:"#2C2417"},
     {lbl:"IVA repercutido",val:fmt(ivaR),sub:"a declarar",ac:"#7A6A50",cl:"#5C4A2A"},
@@ -1413,7 +1436,7 @@ function ViewDashboard({ facturas, historico }) {
             <div className="kpi-lbl">{k.lbl}</div>
             <div className="kpi-val">{k.val}</div>
             <div className="kpi-sub" style={{whiteSpace:"pre-line"}}>{k.sub}</div>
-            {k.delta&&<div className={"kpi-delta "+(k.up?"dpos":"dneg")}>{k.up?"▲":"▼"} {k.delta}% vs año anterior</div>}
+            {k.delta!==null&&k.up!==null&&<div className={"kpi-delta "+(k.up?"dpos":"dneg")}>{k.up?"▲":"▼"} {Math.abs(k.delta)}% vs año anterior</div>}
           </div>
         ))}
       </div>
@@ -1439,25 +1462,35 @@ function ViewDashboard({ facturas, historico }) {
         <div className="ch-card">
           <div className="ch-title">Por categoría</div>
           <div className="ch-sub">{vista==="ingresos"?"Distribución ingresos":"Distribución gastos"}</div>
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={catData} cx="50%" cy="50%" innerRadius="42%" outerRadius="72%" paddingAngle={3} dataKey="value">
+              <Pie data={catData} cx="50%" cy="50%" innerRadius="40%" outerRadius="70%" paddingAngle={3} dataKey="value" label={false} labelLine={false}>
                 {catData.map((_,i)=><Cell key={i} fill={CAT_COLORS[i%CAT_COLORS.length]}/>)}
               </Pie>
-              <Tooltip
-                wrapperStyle={{background:"transparent",border:"none",boxShadow:"none"}}
-                content={({active,payload})=>{
-                  if(!active||!payload?.length) return null;
-                  const p=payload[0];
-                  return <div style={{background:"#F5F0E8",border:".5px solid #B8962E",padding:"10px 14px",fontFamily:"'Cormorant Garamond',Georgia,serif",boxShadow:"0 4px 16px rgba(44,36,23,.15)",borderRadius:0}}>
-                    <div style={{fontSize:13,letterSpacing:".1em",textTransform:"uppercase",color:"#8B6914",marginBottom:4}}>{p.name}</div>
-                    <div style={{fontSize:16,fontWeight:500,color:"#2C2417"}}>{fmt(p.value)}</div>
-                  </div>;
-                }}/>
+              <Tooltip content={({active,payload})=>{
+                if(!active||!payload?.length) return null;
+                const p=payload[0];
+                const total=catData.reduce((s,d)=>s+d.value,0);
+                const pct=total>0?(p.value/total*100).toFixed(1):0;
+                return <div style={{background:"#F5F0E8",border:".5px solid #B8962E",padding:"10px 14px",fontFamily:"'Cormorant Garamond',Georgia,serif",boxShadow:"0 4px 16px rgba(44,36,23,.15)"}}>
+                  <div style={{fontSize:13,letterSpacing:".1em",textTransform:"uppercase",color:"#8B6914",marginBottom:4}}>{p.name}</div>
+                  <div style={{fontSize:16,fontWeight:500,color:"#2C2417"}}>{fmt(p.value)}</div>
+                  <div style={{fontSize:14,color:"#5C4A2A"}}>{pct}% del total</div>
+                </div>;
+              }}/>
             </PieChart>
           </ResponsiveContainer>
-          <div style={{display:"flex",flexWrap:"wrap",gap:"5px 14px",marginTop:8}}>
-            {catData.map((d,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:5,fontSize:13,color:"#2C2417",fontFamily:"Cormorant Garamond"}}><span style={{width:7,height:7,borderRadius:"50%",background:CAT_COLORS[i%CAT_COLORS.length],flexShrink:0,display:"inline-block"}}/>{d.name}</div>)}
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:10}}>
+            {catData.map((d,i)=>{
+              const total=catData.reduce((s,x)=>s+x.value,0);
+              const pct=total>0?(d.value/total*100).toFixed(1):0;
+              return <div key={i} style={{display:"flex",alignItems:"center",gap:10,fontFamily:"'Cormorant Garamond',serif",padding:"4px 0",borderBottom:".5px solid #EDE5D0"}}>
+                <span style={{width:10,height:10,borderRadius:"50%",background:CAT_COLORS[i%CAT_COLORS.length],flexShrink:0}}/>
+                <span style={{flex:1,fontSize:14,color:"#2C2417"}}>{d.name}</span>
+                <span style={{fontSize:18,fontWeight:700,color:CAT_COLORS[i%CAT_COLORS.length],minWidth:48,textAlign:"right"}}>{pct}%</span>
+                <span style={{fontSize:13,color:"#9C8E7A",minWidth:90,textAlign:"right"}}>{fmt(d.value)}</span>
+              </div>;
+            })}
           </div>
         </div>
 
