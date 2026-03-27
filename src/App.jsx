@@ -18,7 +18,7 @@ const _sb = createClient(
 async function db() { return _sb; }
 
 // ── Google Drive via Apps Script ─────────────────────────────
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbnPxfeex7bGuZomB3UcJNAzuSeHLu1oI1BF4AFT0I0gXB71G9Lnhr6GjydZMAx0lliw/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_htCWVGPoEQdYchRTJDFJOuW50j9pxQ1NoaDi69wTV4zAR-13SU0BE4CsGZlAdKACWw/exec";
 
 async function subirADrive(file, trimestre, anyo, tipo) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT") return null;
