@@ -26,20 +26,31 @@ function doPost(e) {
     var mimeType = params.mimeType || "image/jpeg";
     var trimestre= params.trimestre|| "T1";
     var anyo     = params.anyo     || new Date().getFullYear().toString();
+    var tipo     = params.tipo     || "gasto";
 
-    // Nombre de la subcarpeta: "T1 - 2025", "T2 - 2025", …
-    var nombreCarpeta = trimestre + " - " + anyo;
+    // Estructura: Raíz / "T1 - 2025" / "Ingresos" o "Gastos"
+    var nombreTrim   = trimestre + " - " + anyo;
+    var nombreTipo   = (tipo === "ingreso") ? "Ingresos" : "Gastos";
 
     // Obtener (o crear) la carpeta raíz
     var raiz = DriveApp.getFolderById(CARPETA_RAIZ_ID);
 
-    // Obtener (o crear) la subcarpeta del trimestre
-    var subcarpeta;
-    var iter = raiz.getFoldersByName(nombreCarpeta);
-    if (iter.hasNext()) {
-      subcarpeta = iter.next();
+    // Obtener (o crear) la carpeta del trimestre
+    var carpetaTrim;
+    var iterTrim = raiz.getFoldersByName(nombreTrim);
+    if (iterTrim.hasNext()) {
+      carpetaTrim = iterTrim.next();
     } else {
-      subcarpeta = raiz.createFolder(nombreCarpeta);
+      carpetaTrim = raiz.createFolder(nombreTrim);
+    }
+
+    // Obtener (o crear) la subcarpeta Ingresos / Gastos
+    var subcarpeta;
+    var iterTipo = carpetaTrim.getFoldersByName(nombreTipo);
+    if (iterTipo.hasNext()) {
+      subcarpeta = iterTipo.next();
+    } else {
+      subcarpeta = carpetaTrim.createFolder(nombreTipo);
     }
 
     // Decodificar base64 y crear el archivo

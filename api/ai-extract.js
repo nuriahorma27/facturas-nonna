@@ -75,6 +75,7 @@ module.exports = async function(req, res) {
         { name: "mimeType",  value: payload.mimeType },
         { name: "trimestre", value: payload.trimestre },
         { name: "anyo",      value: String(payload.anyo) },
+        { name: "tipo",      value: payload.tipo || "gasto" },
       ];
 
       let formBody = "";

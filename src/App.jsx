@@ -20,7 +20,7 @@ async function db() { return _sb; }
 // ── Google Drive via Apps Script ─────────────────────────────
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbnPxfeex7bGuZomB3UcJNAzuSeHLu1oI1BF4AFT0I0gXB71G9Lnhr6GjydZMAx0lliw/exec";
 
-async function subirADrive(file, trimestre, anyo) {
+async function subirADrive(file, trimestre, anyo, tipo) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT") return null;
   try {
     const base64 = await new Promise((res, rej) => {
@@ -41,6 +41,7 @@ async function subirADrive(file, trimestre, anyo) {
         mimeType: file.type || "application/octet-stream",
         trimestre,
         anyo,
+        tipo: tipo || "gasto",
       }),
     });
 
@@ -677,7 +678,7 @@ function ViewSubida({ onSaved, toast }) {
       const trimestre = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
 
       // Subir a Drive (fuente principal del archivo)
-      const driveResult = await subirADrive(item.file, trimestre, anyo);
+      const driveResult = await subirADrive(item.file, trimestre, anyo, data.tipo);
       const driveUrl = typeof driveResult === "string" ? driveResult : null;
 
       const {error:dbErr} = await supa.from("facturas").insert([{
