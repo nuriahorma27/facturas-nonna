@@ -23,11 +23,17 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_htCWVGPoEQdY
 async function subirADrive(file, trimestre, anyo, tipo) {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT") return null;
   try {
+    const isPdf = file.type === "application/pdf" || file.name.match(/\.pdf$/i);
+    // Comprimir imágenes antes de enviar para no superar el límite del serverless (~4MB)
+    const fileToSend = isPdf ? file : await compressImage(file, 2000, 0.88);
+    const mimeOut   = isPdf ? "application/pdf" : "image/jpeg";
+    const nombreOut = isPdf ? file.name : file.name.replace(/\.[^.]+$/, ".jpg");
+
     const base64 = await new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = () => res(r.result.split(",")[1]);
       r.onerror = rej;
-      r.readAsDataURL(file);
+      r.readAsDataURL(fileToSend);
     });
 
     const resp = await fetch("/api/ai-extract", {
@@ -37,19 +43,20 @@ async function subirADrive(file, trimestre, anyo, tipo) {
         action: "drive-upload",
         appsScriptUrl: APPS_SCRIPT_URL,
         file: base64,
-        nombre: file.name,
-        mimeType: file.type || "application/octet-stream",
+        nombre: nombreOut,
+        mimeType: mimeOut,
         trimestre,
         anyo,
         tipo: tipo || "gasto",
       }),
     });
 
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    return data.success ? (data.fileUrl || true) : null;
+    if (!data.success) throw new Error(data.error || "Apps Script error");
+    return data.fileUrl || true;
   } catch(e) {
-    console.warn("Drive upload failed:", e.message);
-    return null;
+    throw new Error("Drive: " + e.message);
   }
 }
 
@@ -678,8 +685,13 @@ function ViewSubida({ onSaved, toast }) {
       const trimestre = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
 
       // Subir a Drive (fuente principal del archivo)
-      const driveResult = await subirADrive(item.file, trimestre, anyo, data.tipo);
-      const driveUrl = typeof driveResult === "string" ? driveResult : null;
+      let driveUrl = null;
+      try {
+        const driveResult = await subirADrive(item.file, trimestre, anyo, data.tipo);
+        driveUrl = typeof driveResult === "string" ? driveResult : null;
+      } catch(driveErr) {
+        toast("⚠️ Error subiendo a Drive: " + driveErr.message, "err");
+      }
 
       const {error:dbErr} = await supa.from("facturas").insert([{
         ...data,
