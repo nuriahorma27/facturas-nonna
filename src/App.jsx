@@ -127,6 +127,8 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .up-sub{font-size:15px;color:#9C8E7A;margin-bottom:18px}
 .fmt-tags{display:flex;justify-content:center;gap:8px}
 .fmt-tag{padding:3px 11px;border:.5px solid #D4C5A9;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#9C8E7A}
+.camera-btn{background:#2C2417;color:#F5F0E8;border:none;padding:10px 22px;font-size:14px;cursor:pointer;letter-spacing:.05em}
+.camera-btn:hover{background:#B8962E}
 .file-cards{margin-bottom:16px}
 .fc{background:#F5F0E8;border:.5px solid #D4C5A9;padding:14px 18px;margin-bottom:7px;display:flex;align-items:center;gap:14px;transition:all .3s;position:relative;overflow:hidden}
 .fc.processing::after,.fc.uploading::after{content:'';position:absolute;bottom:0;left:0;height:2px;background:linear-gradient(90deg,#B8962E,#D4AF5A,#B8962E);background-size:200% 100%;animation:shimmer 1.5s linear infinite;width:100%}
@@ -357,9 +359,11 @@ const I = {
 async function extractWithAI(file) {
   const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
   const isPdf = file.type==="application/pdf";
+  const rawType = file.type||"image/jpeg";
+  const mediaType = rawType.match(/heic|heif/i) ? "image/jpeg" : rawType;
   const block = isPdf
     ? {type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}
-    : {type:"image",source:{type:"base64",media_type:file.type||"image/jpeg",data:b64}};
+    : {type:"image",source:{type:"base64",media_type:mediaType,data:b64}};
   const prompt = `Analiza esta factura. Responde SOLO con JSON válido sin texto extra ni backticks:
 {"tipo":"gasto","fecha":"DD/MM/YYYY","numero_factura":"","proveedor_cliente":"","nif_cif":"","concepto":"","base_imponible":0,"iva_porcentaje":21,"iva_importe":0,"total":0,"categoria":"Otros","estado":"pendiente"}
 tipo: gasto|ingreso. categoria: Telas y materiales|Transporte y envíos|Marketing y publicidad|Equipamiento y maquinaria|Servicios externos|Nóminas|Alquiler|Suministros|Otros. estado: pagada|pendiente.`;
@@ -466,9 +470,10 @@ function ViewSubida({ onSaved, toast }) {
   const [results, setResults] = useState({});
   const [saved,   setSaved]   = useState({});
   const inputRef = useRef();
+  const cameraRef = useRef();
 
   const addFiles = useCallback((nf) => {
-    const arr = Array.from(nf).filter(f=>f.type.match(/pdf|jpeg|jpg|png/i)||f.name.match(/\.(pdf|jpg|jpeg|png)$/i));
+    const arr = Array.from(nf).filter(f=>f.type.match(/pdf|jpeg|jpg|png|heic|heif/i)||f.name.match(/\.(pdf|jpg|jpeg|png|heic|heif)$/i)||f.type.startsWith("image/"));
     setFiles(p=>[...p,...arr.map(f=>({file:f,id:Math.random().toString(36).slice(2),status:"waiting"}))]);
   },[]);
 
@@ -636,11 +641,13 @@ function ViewSubida({ onSaved, toast }) {
       {/* Modo archivo */}
       {!modoManual&&<>
       <div className={"upload-zone"+(drag?" drag":"")} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={onDrop} onClick={()=>inputRef.current.click()}>
-        <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>addFiles(e.target.files)}/>
+        <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*" style={{display:"none"}} onChange={e=>{addFiles(e.target.files);e.target.value="";}}/>
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{addFiles(e.target.files);e.target.value="";}}/>
         <div className="up-icon">{I.upload}</div>
         <p className="up-title">Arrastra tus facturas aquí o <em>haz clic para seleccionar</em></p>
         <p className="up-sub">PDF, foto o imagen escaneada — varias a la vez</p>
         <div className="fmt-tags">{["PDF","JPG","PNG"].map(f=><span key={f} className="fmt-tag">{f}</span>)}</div>
+        <button className="btn-sm camera-btn" style={{marginTop:14}} onClick={e=>{e.stopPropagation();cameraRef.current.click();}}>📷 Tomar foto</button>
       </div>
 
       {files.length>0 && (
