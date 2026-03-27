@@ -15,7 +15,7 @@
 
 // ⬇️  CAMBIA ESTO: ID de tu carpeta raíz de Drive
 // (la parte final de la URL: drive.google.com/drive/folders/ESTE_ID)
-var CARPETA_RAIZ_ID = "PEGA_AQUI_EL_ID_DE_TU_CARPETA";
+var CARPETA_RAIZ_ID = "1_-4IPitaopGpH6XCfcvOIhcB6c9V1cM5";
 
 // ------------------------------------------------------------
 function doPost(e) {
