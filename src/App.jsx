@@ -57,6 +57,18 @@ const CAT_COLORS = ["#B8962E","#C4A882","#8B6914","#D4AF5A","#5C4A2A","#9C8E7A",
 const fmt  = (n) => Number(n).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
 const fmtK = (n) => Math.abs(n)>=1000 ? (n/1000).toFixed(1).replace(".",",")+"k €" : Number(n).toFixed(0)+" €";
 
+// Cálculo de IVA centralizado — prioridad: base×pct > iva_importe almacenado > total/(1+pct)
+const calcIva = (f) => {
+  const base = Number(f.base_imponible)||0;
+  const pct  = (Number(f.iva_porcentaje)||21)/100;
+  if(base>0) return Math.round(base*pct*100)/100;
+  const iv = Number(f.iva_importe);
+  if(iv>0) return iv;
+  const tot = Number(f.total)||0;
+  if(tot>0) return Math.round((tot - tot/(1+pct))*100)/100;
+  return 0;
+};
+
 // ── CSS global ───────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
@@ -436,7 +448,7 @@ function buildExcel(facturas) {
     for(let c=1;c<=11;c++) sc(ws,XLSX.utils.encode_cell({r:row-1,c}),"",s(C.hBg,C.hFg));row++;
     const gas=data.filter(f=>f.tipo==="gasto"),ing=data.filter(f=>f.tipo==="ingreso");
     const tI=ing.reduce((a,f)=>a+Number(f.total),0),tG=gas.reduce((a,f)=>a+Number(f.total),0);
-    const bal=tI-tG,ivaR=ing.reduce((a,f)=>a+Number(f.iva_importe),0),ivaS=gas.reduce((a,f)=>a+Number(f.iva_importe),0);
+    const bal=tI-tG,ivaR=ing.reduce((a,f)=>a+calcIva(f),0),ivaS=gas.reduce((a,f)=>a+calcIva(f),0);
     ["","Ingresos","Gastos","Balance","IVA Repercutido","IVA Soportado","IVA Neto","","","","",""].forEach((h,i)=>sc(ws,XLSX.utils.encode_cell({r:row-1,c:i}),h,s(C.hBg,C.hFg,true,10,"center")));row++;
     ["",[tI,"pos"],[tG,"neg"],[bal,bal>=0?"pos":"neg"],[ivaR,""],[ivaS,""],[ivaR-ivaS,(ivaR-ivaS)>=0?"neg":"pos"],"","","","",""].forEach((v,i)=>{
       const val=Array.isArray(v)?v[0]:v,color=Array.isArray(v)&&v[1]?C[v[1]]:"FF2C2417";
@@ -1287,17 +1299,8 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
 
   const tG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
   const tI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
-  const calcIvaL = (f) => {
-    const iv = Number(f.iva_importe);
-    if(iv>0) return iv;
-    const tot = Number(f.total)||0;
-    const base = Number(f.base_imponible)||0;
-    if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
-    if(tot>0) return Math.round((tot - tot/1.21)*100)/100;
-    return 0;
-  };
-  const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+calcIvaL(f),0);
-  const ivaI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+calcIvaL(f),0);
+  const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+calcIva(f),0);
+  const ivaI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+calcIva(f),0);
   const nG=filtered.filter(f=>f.tipo==="gasto").length;
   const nI=filtered.filter(f=>f.tipo==="ingreso").length;
   const pend=filtered.filter(f=>f.estado==="pendiente").length;
@@ -1512,17 +1515,8 @@ function ViewDashboard({ facturas, historico }) {
   const tG=gas.reduce((s,f)=>s+Number(f.total),0);
   const tI=ing.reduce((s,f)=>s+Number(f.total),0);
   const bal=tI-tG;
-  const calcIvaF = (f) => {
-    const iv = Number(f.iva_importe);
-    if(iv>0) return iv;
-    const tot = Number(f.total)||0;
-    const base = Number(f.base_imponible)||0;
-    if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
-    if(tot>0) { const pct=(Number(f.iva_porcentaje)||21)/100; return Math.round((tot - tot/(1+pct))*100)/100; }
-    return 0;
-  };
-  const ivaR=ing.reduce((s,f)=>s+calcIvaF(f),0);
-  const ivaS=gas.reduce((s,f)=>s+calcIvaF(f),0);
+  const ivaR=ing.reduce((s,f)=>s+calcIva(f),0);
+  const ivaS=gas.reduce((s,f)=>s+calcIva(f),0);
   const ivaN=ivaR-ivaS;
   const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente");
 
@@ -1579,15 +1573,6 @@ function ViewDashboard({ facturas, historico }) {
         const a = (f.fecha||"").split("/")[2];
         return meses.includes(m) && (!a || a===anyoActual || useMock);
       });
-      const calcIva = (f) => {
-        const iv = Number(f.iva_importe);
-        if(iv>0) return iv;
-        const tot = Number(f.total)||0;
-        const base = Number(f.base_imponible)||0;
-        if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
-        if(tot>0) { const pct=(Number(f.iva_porcentaje)||21)/100; return Math.round((tot - tot/(1+pct))*100)/100; }
-        return 0;
-      };
       const ivaS = gastosTrim.reduce((s,f)=>s+calcIva(f),0);
       const ivaR = ingresosTrim.reduce((s,f)=>s+calcIva(f),0);
       return {t, ivaS, ivaR, net: ivaR-ivaS};
@@ -1823,16 +1808,16 @@ function ViewExportar({ facturas, toast }) {
   const ing  = data.filter(f=>f.tipo==="ingreso");
   const tI   = ing.reduce((s,f)=>s+Number(f.total),0);
   const tG   = gas.reduce((s,f)=>s+Number(f.total),0);
-  const ivaR = ing.reduce((s,f)=>s+Number(f.iva_importe),0);
-  const ivaS = gas.reduce((s,f)=>s+Number(f.iva_importe),0);
+  const ivaR = ing.reduce((s,f)=>s+calcIva(f),0);
+  const ivaS = gas.reduce((s,f)=>s+calcIva(f),0);
   const pend = data.filter(f=>f.estado==="pendiente").length;
 
   const trimData = ["T1","T2","T3","T4"].map(t=>({
     t,
     ing:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
     gas:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
-    ivaR:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+Number(f.iva_importe),0),
-    ivaS:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+Number(f.iva_importe),0),
+    ivaR:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
+    ivaS:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
   }));
 
   const doExport=()=>{setExporting(true);try{buildExcel(data);}catch(e){window.alert("Error: "+e.message);}setExporting(false);};
