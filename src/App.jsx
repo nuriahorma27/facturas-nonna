@@ -45,7 +45,7 @@ async function subirADrive(file, trimestre, anyo) {
     });
 
     const data = await resp.json();
-    return data.success ? true : null;
+    return data.success ? (data.fileUrl || true) : null;
   } catch(e) {
     console.warn("Drive upload failed:", e.message);
     return null;
@@ -56,6 +56,18 @@ const CATS = ["Telas y materiales","Transporte y envíos","Marketing y publicida
 const CAT_COLORS = ["#B8962E","#C4A882","#8B6914","#D4AF5A","#5C4A2A","#9C8E7A","#7A6A50","#D4C5A9","#E8DFC8"];
 const fmt  = (n) => Number(n).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
 const fmtK = (n) => Math.abs(n)>=1000 ? (n/1000).toFixed(1).replace(".",",")+"k €" : Number(n).toFixed(0)+" €";
+
+// Cálculo de IVA centralizado — prioridad: base×pct > iva_importe almacenado > total/(1+pct)
+const calcIva = (f) => {
+  const base = Number(f.base_imponible)||0;
+  const pct  = (Number(f.iva_porcentaje)||21)/100;
+  if(base>0) return Math.round(base*pct*100)/100;
+  const iv = Number(f.iva_importe);
+  if(iv>0) return iv;
+  const tot = Number(f.total)||0;
+  if(tot>0) return Math.round((tot - tot/(1+pct))*100)/100;
+  return 0;
+};
 
 // ── CSS global ───────────────────────────────────────────────
 const CSS = `
@@ -127,6 +139,8 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#2C2417;background:#ED
 .up-sub{font-size:15px;color:#9C8E7A;margin-bottom:18px}
 .fmt-tags{display:flex;justify-content:center;gap:8px}
 .fmt-tag{padding:3px 11px;border:.5px solid #D4C5A9;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#9C8E7A}
+.camera-btn{background:#2C2417;color:#F5F0E8;border:none;padding:10px 22px;font-size:14px;cursor:pointer;letter-spacing:.05em}
+.camera-btn:hover{background:#B8962E}
 .file-cards{margin-bottom:16px}
 .fc{background:#F5F0E8;border:.5px solid #D4C5A9;padding:14px 18px;margin-bottom:7px;display:flex;align-items:center;gap:14px;transition:all .3s;position:relative;overflow:hidden}
 .fc.processing::after,.fc.uploading::after{content:'';position:absolute;bottom:0;left:0;height:2px;background:linear-gradient(90deg,#B8962E,#D4AF5A,#B8962E);background-size:200% 100%;animation:shimmer 1.5s linear infinite;width:100%}
@@ -354,12 +368,35 @@ const I = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────
+// Comprime una imagen a máx 1600px y calidad 0.82 para no superar límites del serverless
+function compressImage(file, maxPx = 1600, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob || file), "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function extractWithAI(file) {
-  const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
   const isPdf = file.type==="application/pdf";
+  // Comprimir imágenes para no superar el límite de body del serverless (~4MB)
+  const fileToSend = isPdf ? file : await compressImage(file);
+  const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(fileToSend);});
+  const mediaType = "image/jpeg";
   const block = isPdf
     ? {type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}
-    : {type:"image",source:{type:"base64",media_type:file.type||"image/jpeg",data:b64}};
+    : {type:"image",source:{type:"base64",media_type:mediaType,data:b64}};
   const prompt = `Analiza esta factura. Responde SOLO con JSON válido sin texto extra ni backticks:
 {"tipo":"gasto","fecha":"DD/MM/YYYY","numero_factura":"","proveedor_cliente":"","nif_cif":"","concepto":"","base_imponible":0,"iva_porcentaje":21,"iva_importe":0,"total":0,"categoria":"Otros","estado":"pendiente"}
 tipo: gasto|ingreso. categoria: Telas y materiales|Transporte y envíos|Marketing y publicidad|Equipamiento y maquinaria|Servicios externos|Nóminas|Alquiler|Suministros|Otros. estado: pagada|pendiente.`;
@@ -411,7 +448,7 @@ function buildExcel(facturas) {
     for(let c=1;c<=11;c++) sc(ws,XLSX.utils.encode_cell({r:row-1,c}),"",s(C.hBg,C.hFg));row++;
     const gas=data.filter(f=>f.tipo==="gasto"),ing=data.filter(f=>f.tipo==="ingreso");
     const tI=ing.reduce((a,f)=>a+Number(f.total),0),tG=gas.reduce((a,f)=>a+Number(f.total),0);
-    const bal=tI-tG,ivaR=ing.reduce((a,f)=>a+Number(f.iva_importe),0),ivaS=gas.reduce((a,f)=>a+Number(f.iva_importe),0);
+    const bal=tI-tG,ivaR=ing.reduce((a,f)=>a+calcIva(f),0),ivaS=gas.reduce((a,f)=>a+calcIva(f),0);
     ["","Ingresos","Gastos","Balance","IVA Repercutido","IVA Soportado","IVA Neto","","","","",""].forEach((h,i)=>sc(ws,XLSX.utils.encode_cell({r:row-1,c:i}),h,s(C.hBg,C.hFg,true,10,"center")));row++;
     ["",[tI,"pos"],[tG,"neg"],[bal,bal>=0?"pos":"neg"],[ivaR,""],[ivaS,""],[ivaR-ivaS,(ivaR-ivaS)>=0?"neg":"pos"],"","","","",""].forEach((v,i)=>{
       const val=Array.isArray(v)?v[0]:v,color=Array.isArray(v)&&v[1]?C[v[1]]:"FF2C2417";
@@ -460,15 +497,127 @@ const MOCK = [
 // ═══════════════════════════════════════════════════════════
 // VISTA: SUBIDA
 // ═══════════════════════════════════════════════════════════
+// ── Recorte de foto para móvil ────────────────────────────────
+function CropModal({ file, onConfirm, onCancel }) {
+  const imgRef = useRef();
+  const containerRef = useRef();
+  const [imgSrc] = useState(()=>URL.createObjectURL(file));
+  const [rect, setRect] = useState({x:0.05,y:0.05,w:0.9,h:0.9});
+  const [nat, setNat] = useState({w:1,h:1});
+  const dragState = useRef(null);
+
+  useEffect(()=>()=>URL.revokeObjectURL(imgSrc),[imgSrc]);
+
+  const onLoad = (e) => {
+    const img=e.target;
+    setNat({w:img.naturalWidth,h:img.naturalHeight});
+    // Auto-detectar bordes del documento
+    try {
+      const cw=200, ch=Math.round(200*img.naturalHeight/img.naturalWidth);
+      const c=document.createElement("canvas"); c.width=cw; c.height=ch;
+      const ctx=c.getContext("2d"); ctx.drawImage(img,0,0,cw,ch);
+      const d=ctx.getImageData(0,0,cw,ch).data;
+      const bg=[d[0],d[1],d[2]]; const thr=45;
+      let x1=cw,y1=ch,x2=0,y2=0;
+      for(let y=0;y<ch;y++) for(let x=0;x<cw;x++){
+        const i=(y*cw+x)*4;
+        if(Math.abs(d[i]-bg[0])+Math.abs(d[i+1]-bg[1])+Math.abs(d[i+2]-bg[2])>thr){
+          x1=Math.min(x1,x);y1=Math.min(y1,y);x2=Math.max(x2,x);y2=Math.max(y2,y);
+        }
+      }
+      const p=0.015;
+      if(x2>x1+cw*0.1&&y2>y1+ch*0.1) setRect({
+        x:Math.max(0,x1/cw-p),y:Math.max(0,y1/ch-p),
+        w:Math.min(1,(x2-x1)/cw+p*2),h:Math.min(1,(y2-y1)/ch+p*2),
+      });
+    } catch(e){}
+  };
+
+  const getPos=(e,el)=>{
+    const b=el.getBoundingClientRect();
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    const cy=e.touches?e.touches[0].clientY:e.clientY;
+    return {x:(cx-b.left)/b.width,y:(cy-b.top)/b.height};
+  };
+
+  const startDrag=(type,e)=>{
+    e.stopPropagation(); e.preventDefault();
+    dragState.current={type,startRect:{...rect},startPos:getPos(e,containerRef.current)};
+  };
+
+  const onMove=(e)=>{
+    if(!dragState.current) return; e.preventDefault();
+    const {type,startRect,startPos}=dragState.current;
+    const pos=getPos(e,containerRef.current);
+    const dx=pos.x-startPos.x, dy=pos.y-startPos.y;
+    let {x,y,w,h}=startRect;
+    if(type==="body"){x=Math.max(0,Math.min(1-w,x+dx));y=Math.max(0,Math.min(1-h,y+dy));}
+    else{
+      if(type[0]==="t"){y=y+dy;h=h-dy;}
+      if(type[0]==="b"){h=h+dy;}
+      if(type[1]==="l"){x=x+dx;w=w-dx;}
+      if(type[1]==="r"){w=w+dx;}
+      if(w<0.05){if(type[1]==="l")x=startRect.x+startRect.w-0.05;w=0.05;}
+      if(h<0.05){if(type[0]==="t")y=startRect.y+startRect.h-0.05;h=0.05;}
+      x=Math.max(0,x);y=Math.max(0,y);
+      if(x+w>1)w=1-x; if(y+h>1)h=1-y;
+    }
+    setRect({x,y,w,h});
+  };
+
+  const confirm=()=>{
+    const c=document.createElement("canvas");
+    c.width=Math.round(rect.w*nat.w); c.height=Math.round(rect.h*nat.h);
+    c.getContext("2d").drawImage(imgRef.current,Math.round(rect.x*nat.w),Math.round(rect.y*nat.h),c.width,c.height,0,0,c.width,c.height);
+    c.toBlob(b=>onConfirm(new File([b],file.name.replace(/\.[^.]+$/,".jpg"),{type:"image/jpeg"})),"image/jpeg",0.92);
+  };
+
+  const H=[{id:"tl",s:{top:0,left:0,cursor:"nwse-resize"}},{id:"tr",s:{top:0,right:0,cursor:"nesw-resize"}},{id:"bl",s:{bottom:0,left:0,cursor:"nesw-resize"}},{id:"br",s:{bottom:0,right:0,cursor:"nwse-resize"}}];
+
+  return (
+    <div className="overlay" style={{zIndex:999}} onClick={onCancel}>
+      <div className="modal" style={{maxWidth:540}} onClick={e=>e.stopPropagation()}>
+        <div className="modal-hd">
+          <div><div className="modal-ttl">Recortar factura</div><div className="modal-meta">Arrastra las esquinas para ajustar — se auto-detectaron los bordes</div></div>
+          <button className="modal-x" onClick={onCancel}>{I.x}</button>
+        </div>
+        <div ref={containerRef} style={{padding:"12px 16px",overflow:"auto",maxHeight:"62vh",touchAction:"none",userSelect:"none"}}
+          onMouseMove={onMove} onMouseUp={()=>{dragState.current=null;}} onMouseLeave={()=>{dragState.current=null;}}
+          onTouchMove={onMove} onTouchEnd={()=>{dragState.current=null;}}>
+          <div style={{position:"relative",display:"inline-block",width:"100%"}}>
+            <img ref={imgRef} src={imgSrc} onLoad={onLoad} style={{width:"100%",height:"auto",display:"block"}} alt=""/>
+            {/* Sombras fuera del área de recorte */}
+            <div style={{position:"absolute",top:0,left:0,right:0,height:rect.y*100+"%",background:"rgba(0,0,0,.55)",pointerEvents:"none"}}/>
+            <div style={{position:"absolute",bottom:0,left:0,right:0,height:(1-rect.y-rect.h)*100+"%",background:"rgba(0,0,0,.55)",pointerEvents:"none"}}/>
+            <div style={{position:"absolute",top:rect.y*100+"%",left:0,width:rect.x*100+"%",height:rect.h*100+"%",background:"rgba(0,0,0,.55)",pointerEvents:"none"}}/>
+            <div style={{position:"absolute",top:rect.y*100+"%",right:0,width:(1-rect.x-rect.w)*100+"%",height:rect.h*100+"%",background:"rgba(0,0,0,.55)",pointerEvents:"none"}}/>
+            {/* Marco de recorte */}
+            <div style={{position:"absolute",left:rect.x*100+"%",top:rect.y*100+"%",width:rect.w*100+"%",height:rect.h*100+"%",border:"2px solid #B8962E",boxSizing:"border-box",cursor:"move"}}
+              onMouseDown={e=>startDrag("body",e)} onTouchStart={e=>startDrag("body",e)}>
+              {H.map(h=><div key={h.id} style={{position:"absolute",width:22,height:22,background:"#B8962E",...h.s}} onMouseDown={e=>startDrag(h.id,e)} onTouchStart={e=>startDrag(h.id,e)}/>)}
+            </div>
+          </div>
+        </div>
+        <div className="modal-ft">
+          <button className="btn-sm" onClick={onCancel}>Cancelar</button>
+          <button className="btn-ink" onClick={confirm}><span>Recortar y usar</span></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ViewSubida({ onSaved, toast }) {
   const [files,   setFiles]   = useState([]);
   const [drag,    setDrag]    = useState(false);
   const [results, setResults] = useState({});
   const [saved,   setSaved]   = useState({});
   const inputRef = useRef();
+  const cameraRef = useRef();
+  const [cropTarget, setCropTarget] = useState(null);
 
   const addFiles = useCallback((nf) => {
-    const arr = Array.from(nf).filter(f=>f.type.match(/pdf|jpeg|jpg|png/i)||f.name.match(/\.(pdf|jpg|jpeg|png)$/i));
+    const arr = Array.from(nf).filter(f=>f.type.match(/pdf|jpeg|jpg|png|heic|heif/i)||f.name.match(/\.(pdf|jpg|jpeg|png|heic|heif)$/i)||f.type.startsWith("image/"));
     setFiles(p=>[...p,...arr.map(f=>({file:f,id:Math.random().toString(36).slice(2),status:"waiting"}))]);
   },[]);
 
@@ -519,19 +668,17 @@ function ViewSubida({ onSaved, toast }) {
         }
       }
 
-      const tipo = item.file.type.startsWith("image")?"image":"pdf";
-      const path = `${Date.now()}_${item.file.name.replace(/\s+/g,"_")}`;
-
-      const {error:upErr} = await supa.storage.from("facturas").upload(path,item.file,{contentType:item.file.type,upsert:true});
-      if(upErr) throw upErr;
-      const {data:{publicUrl}} = supa.storage.from("facturas").getPublicUrl(path);
+      const mimeType = item.file.type || (item.file.name.match(/\.pdf$/i) ? "application/pdf" : "image/jpeg");
+      const tipo = mimeType.startsWith("image")?"image":"pdf";
 
       const fecha = data.fecha || "";
       const mes   = parseInt(fecha.split("/")[1]) || new Date().getMonth()+1;
       const anyo  = fecha.split("/")[2] || new Date().getFullYear().toString();
       const trimestre = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
 
-      const driveUrl = await subirADrive(item.file, trimestre, anyo);
+      // Subir a Drive (fuente principal del archivo)
+      const driveResult = await subirADrive(item.file, trimestre, anyo);
+      const driveUrl = typeof driveResult === "string" ? driveResult : null;
 
       const {error:dbErr} = await supa.from("facturas").insert([{
         ...data,
@@ -540,9 +687,9 @@ function ViewSubida({ onSaved, toast }) {
         iva_importe:    Number(data.iva_importe)||0,
         total:          Number(data.total)||0,
         archivo_nombre: item.file.name,
-        archivo_url:    publicUrl,
+        archivo_url:    driveUrl,
         archivo_tipo:   tipo,
-        drive_url:      driveUrl || null,
+        drive_url:      driveUrl,
         es_duplicada:   esDuplicada,
       }]);
       if(dbErr) throw dbErr;
@@ -550,8 +697,8 @@ function ViewSubida({ onSaved, toast }) {
       setSaved(p=>({...p,[item.id]:true}));
       setFiles(p=>p.map(f=>f.id===item.id?{...f,status:"done"}:f));
 
-      if(driveUrl) toast(`Guardado en Supabase y Drive (${trimestre} ${anyo}) ✓`);
-      else toast("Guardado en Supabase ✓");
+      if(driveUrl) toast(`Guardado en Drive (${trimestre} ${anyo}) ✓`);
+      else toast("Guardado en Supabase ✓ (Drive no configurado)");
 
       onSaved();
     } catch(e) {
@@ -636,12 +783,15 @@ function ViewSubida({ onSaved, toast }) {
       {/* Modo archivo */}
       {!modoManual&&<>
       <div className={"upload-zone"+(drag?" drag":"")} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={onDrop} onClick={()=>inputRef.current.click()}>
-        <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>addFiles(e.target.files)}/>
+        <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*" style={{display:"none"}} onChange={e=>{addFiles(e.target.files);e.target.value="";}}/>
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{if(e.target.files[0])setCropTarget(e.target.files[0]);e.target.value="";}}/>
         <div className="up-icon">{I.upload}</div>
         <p className="up-title">Arrastra tus facturas aquí o <em>haz clic para seleccionar</em></p>
         <p className="up-sub">PDF, foto o imagen escaneada — varias a la vez</p>
         <div className="fmt-tags">{["PDF","JPG","PNG"].map(f=><span key={f} className="fmt-tag">{f}</span>)}</div>
+        <button className="btn-sm camera-btn" style={{marginTop:14}} onClick={e=>{e.stopPropagation();cameraRef.current.click();}}>📷 Tomar foto</button>
       </div>
+      {cropTarget&&<CropModal file={cropTarget} onConfirm={f=>{addFiles([f]);setCropTarget(null);}} onCancel={()=>setCropTarget(null)}/>}
 
       {files.length>0 && (
         <>
@@ -883,142 +1033,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
     e.target.value="";
   };
 
-      const parseNum = (v) => {
-        if(v===null||v===undefined||v==="") return 0;
-        if(typeof v==="number") return Math.round(v*100)/100;
-        return parseFloat(String(v).replace(/[^0-9.,\-]/g,"").replace(",",".")) || 0;
-      };
 
-      const getAnyo = (fechaStr) => {
-        const m = fechaStr.match(/\d{4}/);
-        return m ? m[0] : new Date().getFullYear().toString();
-      };
-      const getMes = (fechaStr) => {
-        const m = fechaStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        return m ? parseInt(m[2]) : 0;
-      };
-      const getTrim = (mes) => mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
-
-      wb.SheetNames.forEach(sheetName => {
-        const ws = wb.Sheets[sheetName];
-        const sheetLower = sheetName.toLowerCase().replace(".","").trim();
-        const tipoHoja = sheetLower.includes("ingreso") ? "ingreso" : "gasto";
-
-        // Intentar leer con el formato específico de Atelier La Nonna
-        // GASTOS: col B=Nº, D=Emisora/Proveedor, E=Fecha Factura, F=Nº Factura, H=Importe Total, I=IVA
-        // INGRESOS: col B=Nº factura, C=Pedido, D=Fecha, E=Importe IVA incluido, F=Importe neto
-        const range = XLSX.utils.decode_range(ws["!ref"] || "A1:Z100");
-        
-        // Buscar fila de cabecera (la que tenga "fecha" o "importe" o "nº")
-        let headerRow = -1;
-        let colMap = {};
-        for(let r=range.s.r; r<=Math.min(range.e.r, 20); r++) {
-          const rowVals = [];
-          for(let c=range.s.c; c<=range.e.c; c++) {
-            const cell = ws[XLSX.utils.encode_cell({r,c})];
-            rowVals.push({c, v: cell ? String(cell.v||"").toLowerCase().trim() : ""});
-          }
-          const hasHeader = rowVals.some(({v})=>v.includes("fecha")||v.includes("importe")||v.includes("nº")||v.includes("número")||v.includes("destinatario")||v.includes("emisor"));
-          if(hasHeader) {
-            headerRow = r;
-            rowVals.forEach(({c,v})=>{
-              if(v.includes("fecha factura")||v==="fecha") colMap.fecha=c;
-              if(v.includes("número factura")||v.includes("nº factura")||v.includes("nº")||v.includes("número")) {
-                if(colMap.nfactura===undefined) colMap.nfactura=c;
-              }
-              if(v.includes("emisor")||v.includes("destinat")||v.includes("proveedor")||v.includes("cliente")||v.includes("pedido")) {
-                if(colMap.proveedor===undefined) colMap.proveedor=c;
-              }
-              if(v.includes("importe total")||v.includes("importe iva")||(v.includes("importe")&&!v.includes("neto"))) {
-                if(colMap.total===undefined) colMap.total=c;
-              }
-              if(v.includes("iva")&&!v.includes("neto")&&!v.includes("incluido")) {
-                if(colMap.iva===undefined) colMap.iva=c;
-              }
-              if(v.includes("neto")||v.includes("base")) {
-                if(colMap.base===undefined) colMap.base=c;
-              }
-              if(v.includes("concepto")||v.includes("descripción")) colMap.concepto=c;
-            });
-            break;
-          }
-        }
-
-        if(headerRow===-1) return; // hoja sin datos reconocibles
-
-        // Leer filas de datos
-        for(let r=headerRow+1; r<=range.e.r; r++) {
-          const getCell = (col) => {
-            if(col===undefined) return null;
-            const cell = ws[XLSX.utils.encode_cell({r,c:col})];
-            if(!cell) return null;
-            if(cell.t==="d") return cell.v; // fecha
-            return cell.v;
-          };
-
-          const totalVal = parseNum(getCell(colMap.total));
-          if(totalVal===0) continue; // fila vacía o total cero
-
-          const fechaRaw = getCell(colMap.fecha);
-          const fechaStr = parseFecha(fechaRaw);
-          if(!fechaStr) continue;
-
-          const anyo = getAnyo(fechaStr);
-          const mes  = getMes(fechaStr);
-          if(!anyo || anyo==="NaN") continue;
-
-          const ivaVal  = parseNum(getCell(colMap.iva));
-          const baseVal = parseNum(getCell(colMap.base)) || (totalVal>0&&ivaVal>0 ? Math.round((totalVal-ivaVal)*100)/100 : Math.round(totalVal/1.21*100)/100);
-          const ivaFinal = ivaVal || Math.round((totalVal-baseVal)*100)/100;
-
-          const provVal = getCell(colMap.proveedor);
-          const provStr = provVal ? String(provVal).trim() : "";
-
-          const nfactVal = getCell(colMap.nfactura);
-          const nfactStr = nfactVal ? String(nfactVal).trim() : "";
-
-          nuevas.push({
-            id: "hist_"+Date.now()+"_"+r+"_"+Math.random().toString(36).slice(2),
-            _historico: true,
-            _anyo: anyo,
-            _origen: file.name,
-            tipo: tipoHoja,
-            fecha: fechaStr,
-            numero_factura: nfactStr,
-            proveedor_cliente: provStr || (tipoHoja==="ingreso"?"Cliente":"Proveedor"),
-            nif_cif: "",
-            concepto: getCell(colMap.concepto) ? String(getCell(colMap.concepto)).trim() : "",
-            base_imponible: baseVal,
-            iva_porcentaje: 21,
-            iva_importe: ivaFinal,
-            total: totalVal,
-            categoria: tipoHoja==="ingreso" ? "Servicios externos" : "Otros",
-            estado: "pagada",
-            trimestre: getTrim(mes),
-            archivo_nombre: file.name,
-            archivo_url: null,
-            archivo_tipo: "excel",
-          });
-        }
-      });
-
-      if(nuevas.length===0) {
-        toast("No se encontraron datos en el Excel. Verifica el formato.","err");
-        setImportando(false);
-        e.target.value="";
-        return;
-      }
-
-      const merged = [...historico.filter(f=>f._origen!==file.name),...nuevas];
-      setHistorico(merged);
-      await guardarHistorico(merged);
-      toast(`Importadas ${nuevas.length} filas de ${file.name} — compartido con el equipo ✓`);
-    } catch(err) {
-      toast("Error al leer el Excel: "+err.message,"err");
-    }
-    setImportando(false);
-    e.target.value="";
-  };
 
   const setF = (k,v)=>setFilters(p=>({...p,[k]:v}));
   const resetF = ()=>setFilters({busqueda:"",tipo:"",categorias:[],estado:"",fechaDesde:"",fechaHasta:""});
@@ -1149,17 +1164,8 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
 
   const tG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
   const tI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
-  const calcIvaL = (f) => {
-    const iv = Number(f.iva_importe);
-    if(iv>0) return iv;
-    const tot = Number(f.total)||0;
-    const base = Number(f.base_imponible)||0;
-    if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
-    if(tot>0) return Math.round((tot - tot/1.21)*100)/100;
-    return 0;
-  };
-  const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+calcIvaL(f),0);
-  const ivaI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+calcIvaL(f),0);
+  const ivaG=filtered.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+calcIva(f),0);
+  const ivaI=filtered.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+calcIva(f),0);
   const nG=filtered.filter(f=>f.tipo==="gasto").length;
   const nI=filtered.filter(f=>f.tipo==="ingreso").length;
   const pend=filtered.filter(f=>f.estado==="pendiente").length;
@@ -1325,8 +1331,16 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
             </div>
             <div className="modal-body">
               <div className="modal-prev">
-                {visor.archivo_url ? (visor.archivo_tipo==="image"?<img src={visor.archivo_url} alt="Factura"/>:<iframe src={visor.archivo_url} width="100%" height="420px" style={{border:"none"}} title="PDF"/>)
-                : <div className="modal-ph">{I.pdf}<span>{visor.archivo_nombre||"Sin archivo"}</span><small>Disponible tras subir desde el módulo 2</small></div>}
+                {(visor.drive_url||visor.archivo_url)
+                  ? <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:12,padding:"24px 0"}}>
+                      {I.pdf}
+                      <span style={{fontSize:15,color:"#5C4A2A"}}>{visor.archivo_nombre||"Archivo adjunto"}</span>
+                      <a href={visor.drive_url||visor.archivo_url} target="_blank" rel="noopener noreferrer" className="btn-ink" style={{textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        <span>Abrir en Drive</span>
+                      </a>
+                    </div>
+                  : <div className="modal-ph">{I.pdf}<span>{visor.archivo_nombre||"Sin archivo"}</span><small>Disponible tras subir desde el módulo 2</small></div>}
               </div>
               <div className="modal-data">
                 <div className="modal-dt">Datos extraídos</div>
@@ -1337,7 +1351,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
             </div>
             <div className="modal-ft">
               <button className="btn-sm" onClick={()=>setVisor(null)}>Cerrar</button>
-              <button className="btn-ink" onClick={()=>downloadFile(visor)}>{I.down}<span>Descargar</span></button>
+              {(visor.drive_url||visor.archivo_url)&&<button className="btn-ink" onClick={()=>window.open(visor.drive_url||visor.archivo_url,"_blank")}>{I.down}<span>Abrir en Drive</span></button>}
             </div>
           </div>
         </div>
@@ -1366,40 +1380,39 @@ function ViewDashboard({ facturas, historico }) {
   const tG=gas.reduce((s,f)=>s+Number(f.total),0);
   const tI=ing.reduce((s,f)=>s+Number(f.total),0);
   const bal=tI-tG;
-  const calcIvaF = (f) => {
-    const iv = Number(f.iva_importe);
-    if(iv>0) return iv;
-    const tot = Number(f.total)||0;
-    const base = Number(f.base_imponible)||0;
-    if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
-    if(tot>0) return Math.round((tot - tot/1.21)*100)/100;
-    return 0;
-  };
-  const ivaR=ing.reduce((s,f)=>s+calcIvaF(f),0);
-  const ivaS=gas.reduce((s,f)=>s+calcIvaF(f),0);
+  const ivaR=ing.reduce((s,f)=>s+calcIva(f),0);
+  const ivaS=gas.reduce((s,f)=>s+calcIva(f),0);
   const ivaN=ivaR-ivaS;
   const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente");
 
   const chartData = useMemo(()=>{
     const meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    const anoActual=new Date().getFullYear().toString();
+    const byMes=(arr,mes,tipo)=>arr.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===mes&&f.tipo===tipo).reduce((s,f)=>s+Number(f.total),0);
+    const byTrim=(arr,idxs,tipo)=>idxs.map(i=>i+1).reduce((s,m)=>s+byMes(arr,m,tipo),0);
+    const hist=historico||[];
     if(periodo==="mensual"){
-      return meses.map((mes,i)=>{
-        const g=facturas.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===i+1&&f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
-        const iv=facturas.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===i+1&&f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
-        return {mes, gastos:g||MOCK_2024[i].g, ingresos:iv||MOCK_2024[i].i, gastos24:MOCK_2024[i].g, ingresos24:MOCK_2024[i].i};
-      });
+      return meses.map((mes,i)=>({
+        mes,
+        gastos:byMes(facturas,i+1,"gasto"),
+        ingresos:byMes(facturas,i+1,"ingreso"),
+        gastos24:byMes(hist,i+1,"gasto")||MOCK_2024[i].g,
+        ingresos24:byMes(hist,i+1,"ingreso")||MOCK_2024[i].i,
+      }));
     }
     if(periodo==="trimestral"){
       return Object.entries(TRIM).map(([t,idxs])=>({
         mes:t,
-        gastos:idxs.reduce((s,i)=>s+MOCK_2024[i].g,0),
-        ingresos:idxs.reduce((s,i)=>s+MOCK_2024[i].i,0),
-        gastos24:idxs.reduce((s,i)=>s+MOCK_2024[i].g*.85,0),
-        ingresos24:idxs.reduce((s,i)=>s+MOCK_2024[i].i*.85,0),
+        gastos:byTrim(facturas,idxs,"gasto"),
+        ingresos:byTrim(facturas,idxs,"ingreso"),
+        gastos24:byTrim(hist,idxs,"gasto")||idxs.reduce((s,i)=>s+MOCK_2024[i].g,0),
+        ingresos24:byTrim(hist,idxs,"ingreso")||idxs.reduce((s,i)=>s+MOCK_2024[i].i,0),
       }));
     }
-    return [{mes:"2025",gastos:tG||47200,ingresos:tI||68300},{mes:"2024",gastos:42000,ingresos:61000}];
-  },[facturas,periodo,tG,tI]);
+    const g24=hist.length>0?hist.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0):MOCK_2024.reduce((s,m)=>s+m.g,0);
+    const i24=hist.length>0?hist.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0):MOCK_2024.reduce((s,m)=>s+m.i,0);
+    return [{mes:anoActual,gastos:tG,ingresos:tI},{mes:String(Number(anoActual)-1),gastos:g24,ingresos:i24}];
+  },[facturas,historico,periodo,tG,tI]);
 
   const catData = useMemo(()=>{
     const src = vista==="ingresos" ? ing : gas;
@@ -1425,16 +1438,6 @@ function ViewDashboard({ facturas, historico }) {
         const a = (f.fecha||"").split("/")[2];
         return meses.includes(m) && (!a || a===anyoActual || useMock);
       });
-      const calcIva = (f) => {
-        const iv = Number(f.iva_importe);
-        if(iv>0) return iv;
-        // Calcular desde total si no hay IVA guardado
-        const tot = Number(f.total)||0;
-        const base = Number(f.base_imponible)||0;
-        if(base>0 && tot>base) return Math.round((tot-base)*100)/100;
-        if(tot>0) return Math.round((tot - tot/1.21)*100)/100;
-        return 0;
-      };
       const ivaS = gastosTrim.reduce((s,f)=>s+calcIva(f),0);
       const ivaR = ingresosTrim.reduce((s,f)=>s+calcIva(f),0);
       return {t, ivaS, ivaR, net: ivaR-ivaS};
@@ -1594,17 +1597,30 @@ function ViewDashboard({ facturas, historico }) {
             <table className="trim-table" style={{minWidth:560}}>
               <thead><tr>{["","T1","T2","T3","T4"].map((h,i)=><th key={i}>{h}</th>)}</tr></thead>
               <tbody>
-                {[{lbl:"Ingresos 2025",key:"i",yr:MOCK_2024,m:1.15,c:"#3A6B3E"},{lbl:"Ingresos 2024",key:"i",yr:MOCK_2024,m:1,c:"rgba(58,107,62,.5)"},{lbl:"Gastos 2025",key:"g",yr:MOCK_2024,m:1.12,c:"#8B3A2A"},{lbl:"Gastos 2024",key:"g",yr:MOCK_2024,m:1,c:"rgba(139,58,42,.5)"}].map((row,ri)=>(
-                  <tr key={ri} style={{borderBottom:ri===1?"1px solid #D4C5A9":undefined}}>
-                    <td style={{textAlign:"left",color:row.c,fontStyle:row.m===1?"italic":"normal"}}>{row.lbl}</td>
-                    {Object.values(TRIM).map((idxs,ti)=>{
-                      const val=idxs.reduce((s,i)=>s+row.yr[i][row.key]*row.m,0);
-                      const base=idxs.reduce((s,i)=>s+row.yr[i][row.key],0);
-                      const delta=((val-base)/base*100).toFixed(0);
-                      return <td key={ti} style={{color:row.c}}>{fmtK(val)}{row.m!==1&&<span style={{fontSize:11,marginLeft:5,color:(row.key==="i"?Number(delta)>=0:Number(delta)<=0)?"#2E6B32":"#8B3A2A"}}>{Number(delta)>=0?"▲":"▼"}{Math.abs(delta)}%</span>}</td>;
-                    })}
-                  </tr>
-                ))}
+                {(()=>{
+                  const hist=historico||[];
+                  const byT=(arr,idxs,tipo)=>idxs.map(i=>i+1).reduce((s,m)=>s+arr.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===m&&f.tipo===tipo).reduce((a,f)=>a+Number(f.total),0),0);
+                  const rows=[
+                    {lbl:`Ingresos ${new Date().getFullYear()}`,tipo:"ingreso",src:facturas,c:"#3A6B3E"},
+                    {lbl:`Ingresos ${new Date().getFullYear()-1}`,tipo:"ingreso",src:hist,c:"rgba(58,107,62,.5)"},
+                    {lbl:`Gastos ${new Date().getFullYear()}`,tipo:"gasto",src:facturas,c:"#8B3A2A"},
+                    {lbl:`Gastos ${new Date().getFullYear()-1}`,tipo:"gasto",src:hist,c:"rgba(139,58,42,.5)"},
+                  ];
+                  return rows.map((row,ri)=>{
+                    const vals=Object.values(TRIM).map(idxs=>byT(row.src,idxs,row.tipo));
+                    const prevVals=ri%2===0?Object.values(TRIM).map(idxs=>byT(rows[ri+1].src,idxs,row.tipo)):null;
+                    return (
+                      <tr key={ri} style={{borderBottom:ri===1?"1px solid #D4C5A9":undefined}}>
+                        <td style={{textAlign:"left",color:row.c,fontStyle:ri%2===1?"italic":"normal"}}>{row.lbl}</td>
+                        {vals.map((val,ti)=>{
+                          const prev=prevVals?.[ti]||0;
+                          const delta=prev>0?((val-prev)/prev*100).toFixed(0):null;
+                          return <td key={ti} style={{color:row.c}}>{fmtK(val)}{delta!==null&&<span style={{fontSize:11,marginLeft:5,color:(row.tipo==="ingreso"?Number(delta)>=0:Number(delta)<=0)?"#2E6B32":"#8B3A2A"}}>{Number(delta)>=0?"▲":"▼"}{Math.abs(delta)}%</span>}</td>;
+                        })}
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>
@@ -1657,16 +1673,16 @@ function ViewExportar({ facturas, toast }) {
   const ing  = data.filter(f=>f.tipo==="ingreso");
   const tI   = ing.reduce((s,f)=>s+Number(f.total),0);
   const tG   = gas.reduce((s,f)=>s+Number(f.total),0);
-  const ivaR = ing.reduce((s,f)=>s+Number(f.iva_importe),0);
-  const ivaS = gas.reduce((s,f)=>s+Number(f.iva_importe),0);
+  const ivaR = ing.reduce((s,f)=>s+calcIva(f),0);
+  const ivaS = gas.reduce((s,f)=>s+calcIva(f),0);
   const pend = data.filter(f=>f.estado==="pendiente").length;
 
   const trimData = ["T1","T2","T3","T4"].map(t=>({
     t,
     ing:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
     gas:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
-    ivaR:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+Number(f.iva_importe),0),
-    ivaS:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+Number(f.iva_importe),0),
+    ivaR:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
+    ivaS:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
   }));
 
   const doExport=()=>{setExporting(true);try{buildExcel(data);}catch(e){window.alert("Error: "+e.message);}setExporting(false);};
