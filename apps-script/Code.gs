@@ -1,57 +1,86 @@
 // ============================================================
 // ATELIER LA NONNA — Google Apps Script
-// Sube facturas a Drive organizadas en carpetas "TX - AÑO"
+// Sube facturas a Drive y gestiona carpetas organizadas
 //
-// INSTRUCCIONES:
-//   1. Abre script.google.com → Nuevo proyecto
-//   2. Pega este código (reemplaza el contenido existente)
-//   3. Cambia CARPETA_RAIZ_ID por el ID real de tu carpeta
-//   4. Guarda (Ctrl+S)
-//   5. Implementar → Nueva implementación → Aplicación web
+// INSTRUCCIONES PARA DESPLEGAR:
+//   1. Abre script.google.com → abre tu proyecto existente
+//   2. Reemplaza todo el contenido con este código
+//   3. Guarda (Ctrl+S)
+//   4. Implementar → Nueva implementación → Aplicación web
 //      · Ejecutar como: Yo
 //      · Quién tiene acceso: Cualquiera
-//   6. Copia la URL generada y pégala en App.jsx como APPS_SCRIPT_URL
+//   5. Copia la URL y asegúrate de que en App.jsx sea la nueva
 // ============================================================
 
-// ⬇️  CAMBIA ESTO: ID de tu carpeta raíz de Drive
-// (la parte final de la URL: drive.google.com/drive/folders/ESTE_ID)
 var CARPETA_RAIZ_ID = "1_-4IPitaopGpH6XCfcvOIhcB6c9V1cM5";
+
+// Obtiene una subcarpeta por nombre, o la crea si no existe
+function getOrCreate(parent, name) {
+  var iter = parent.getFoldersByName(name);
+  if (iter.hasNext()) return iter.next();
+  return parent.createFolder(name);
+}
 
 // ------------------------------------------------------------
 function doPost(e) {
   try {
-    var params   = e.parameter;
-    var b64      = params.file;
-    var nombre   = params.nombre   || ("factura_" + Date.now() + ".jpg");
-    var mimeType = params.mimeType || "image/jpeg";
-    var trimestre= params.trimestre|| "T1";
-    var anyo     = params.anyo     || new Date().getFullYear().toString();
-    var tipo     = params.tipo     || "gasto";
+    // Aceptar JSON (nuevo) o form-data (backwards compat)
+    var data = {};
+    if (e.postData && e.postData.type === "application/json") {
+      data = JSON.parse(e.postData.contents);
+    } else {
+      data = e.parameter || {};
+    }
+
+    var action = data.action || "upload";
+
+    // ── Acción: mover archivo a carpeta "Eliminadas" ──────────
+    if (action === "move-to-eliminadas") {
+      var fileId    = data.fileId;
+      var trimestre = data.trimestre || "T1";
+      var anyo      = data.anyo     || new Date().getFullYear().toString();
+      var tipo      = data.tipo     || "gasto";
+
+      var nombreTrim = trimestre + " - " + anyo;
+      var nombreTipo = (tipo === "ingreso") ? "Ingresos" : "Gastos";
+
+      var raiz          = DriveApp.getFolderById(CARPETA_RAIZ_ID);
+      var carpetaTrim   = getOrCreate(raiz,       nombreTrim);
+      var carpetaTipo   = getOrCreate(carpetaTrim, nombreTipo);
+      var carpetaEliminadas = getOrCreate(carpetaTipo, "Eliminadas");
+
+      var file = DriveApp.getFileById(fileId);
+      carpetaEliminadas.addFile(file);
+      // Quitar de la carpeta original
+      var parents = file.getParents();
+      if (parents.hasNext()) {
+        var original = parents.next();
+        // Solo quitar si no es ya la carpeta "Eliminadas"
+        if (original.getId() !== carpetaEliminadas.getId()) {
+          original.removeFile(file);
+        }
+      }
+
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ── Acción por defecto: subir archivo ────────────────────
+    var b64      = data.file;
+    var nombre   = data.nombre    || ("factura_" + Date.now() + ".jpg");
+    var mimeType = data.mimeType  || "image/jpeg";
+    var trimestre= data.trimestre || "T1";
+    var anyo     = data.anyo      || new Date().getFullYear().toString();
+    var tipo     = data.tipo      || "gasto";
 
     // Estructura: Raíz / "T1 - 2025" / "Ingresos" o "Gastos"
-    var nombreTrim   = trimestre + " - " + anyo;
-    var nombreTipo   = (tipo === "ingreso") ? "Ingresos" : "Gastos";
+    var nombreTrim = trimestre + " - " + anyo;
+    var nombreTipo = (tipo === "ingreso") ? "Ingresos" : "Gastos";
 
-    // Obtener (o crear) la carpeta raíz
-    var raiz = DriveApp.getFolderById(CARPETA_RAIZ_ID);
-
-    // Obtener (o crear) la carpeta del trimestre
-    var carpetaTrim;
-    var iterTrim = raiz.getFoldersByName(nombreTrim);
-    if (iterTrim.hasNext()) {
-      carpetaTrim = iterTrim.next();
-    } else {
-      carpetaTrim = raiz.createFolder(nombreTrim);
-    }
-
-    // Obtener (o crear) la subcarpeta Ingresos / Gastos
-    var subcarpeta;
-    var iterTipo = carpetaTrim.getFoldersByName(nombreTipo);
-    if (iterTipo.hasNext()) {
-      subcarpeta = iterTipo.next();
-    } else {
-      subcarpeta = carpetaTrim.createFolder(nombreTipo);
-    }
+    var raiz      = DriveApp.getFolderById(CARPETA_RAIZ_ID);
+    var carpetaTrim = getOrCreate(raiz, nombreTrim);
+    var subcarpeta  = getOrCreate(carpetaTrim, nombreTipo);
 
     // Decodificar base64 y crear el archivo
     var bytes = Utilities.base64Decode(b64);
@@ -61,11 +90,14 @@ function doPost(e) {
     // Hacer el archivo accesible por enlace
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-    // Devolver la URL de visualización
     var fileUrl = "https://drive.google.com/file/d/" + file.getId() + "/view";
 
     return ContentService
-      .createTextOutput(JSON.stringify({ success: true, fileUrl: fileUrl }))
+      .createTextOutput(JSON.stringify({
+        success: true,
+        fileUrl: fileUrl,
+        fileId:  file.getId()
+      }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
@@ -75,7 +107,7 @@ function doPost(e) {
   }
 }
 
-// GET de prueba — abre la URL del script en el navegador para verificar que funciona
+// GET de prueba — abre la URL en el navegador para verificar que funciona
 function doGet() {
   return ContentService
     .createTextOutput(JSON.stringify({ status: "ok", carpeta: CARPETA_RAIZ_ID }))

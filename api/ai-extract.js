@@ -67,52 +67,83 @@ module.exports = async function(req, res) {
       const APPS_SCRIPT_URL = payload.appsScriptUrl;
       const url = new URL(APPS_SCRIPT_URL);
 
-      // Construir form-data manualmente
-      const boundary = "----FormBoundary" + Math.random().toString(36).slice(2);
-      const fields = [
-        { name: "file",      value: payload.file },
-        { name: "nombre",    value: payload.nombre },
-        { name: "mimeType",  value: payload.mimeType },
-        { name: "trimestre", value: payload.trimestre },
-        { name: "anyo",      value: String(payload.anyo) },
-        { name: "tipo",      value: payload.tipo || "gasto" },
-      ];
-
-      let formBody = "";
-      for (const f of fields) {
-        formBody += `--${boundary}\r\nContent-Disposition: form-data; name="${f.name}"\r\n\r\n${f.value}\r\n`;
-      }
-      formBody += `--${boundary}--\r\n`;
+      // Enviar JSON (más fiable que multipart con base64 largo)
+      const jsonBody = JSON.stringify({
+        file:      payload.file,
+        nombre:    payload.nombre,
+        mimeType:  payload.mimeType,
+        trimestre: payload.trimestre,
+        anyo:      String(payload.anyo),
+        tipo:      payload.tipo || "gasto",
+      });
 
       const options = {
         hostname: url.hostname,
         path: url.pathname + url.search,
         method: "POST",
         headers: {
-          "Content-Type": `multipart/form-data; boundary=${boundary}`,
-          "Content-Length": Buffer.byteLength(formBody),
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(jsonBody),
         },
-        maxRedirects: 5,
       };
 
       // Apps Script redirige — seguimos la redirección manualmente
-      const result = await httpsRequestRaw(options, formBody);
+      const result = await httpsRequestRaw(options, jsonBody);
 
       // Intentar extraer la URL del archivo desde la respuesta del Apps Script
       let fileUrl = null;
+      let fileId  = null;
       try {
         const parsed = JSON.parse(result.body);
         fileUrl = parsed.fileUrl || parsed.url || parsed.webViewLink || parsed.webContentLink || null;
+        fileId  = parsed.fileId || null;
+        if (!parsed.success && parsed.error) {
+          return res.status(200).json({ success: false, error: parsed.error });
+        }
       } catch(e) {
         // La respuesta puede ser una URL directa en texto plano
         const trimmed = (result.body || "").toString().trim();
         if (trimmed.startsWith("http")) fileUrl = trimmed;
       }
 
-      return res.status(200).json({ success: true, status: result.status, fileUrl });
+      return res.status(200).json({ success: true, status: result.status, fileUrl, fileId });
     }
 
-    // ── Ruta 2: Extracción con IA ──────────────────────────────
+    // ── Ruta 2: Mover archivo en Drive a carpeta "Eliminadas" ──
+    if (payload.action === "drive-move") {
+      const APPS_SCRIPT_URL = payload.appsScriptUrl;
+      const url = new URL(APPS_SCRIPT_URL);
+
+      const jsonBody = JSON.stringify({
+        action:    "move-to-eliminadas",
+        fileId:    payload.fileId,
+        trimestre: payload.trimestre,
+        anyo:      String(payload.anyo),
+        tipo:      payload.tipo || "gasto",
+      });
+
+      const options = {
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(jsonBody),
+        },
+      };
+
+      const result = await httpsRequestRaw(options, jsonBody);
+
+      let success = false;
+      try {
+        const parsed = JSON.parse(result.body);
+        success = !!parsed.success;
+      } catch(e) {}
+
+      return res.status(200).json({ success });
+    }
+
+    // ── Ruta 3: Extracción con IA ──────────────────────────────
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return res.status(500).json({ error: "Missing ANTHROPIC_API_KEY" });

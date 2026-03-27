@@ -77,6 +77,41 @@ const calcIva = (f) => {
   return 0;
 };
 
+// Calcula la base imponible real de una factura
+const calcBase = (f) => {
+  const base = Number(f.base_imponible)||0;
+  if(base>0) return base;
+  const tot = Number(f.total)||0;
+  const pct = (Number(f.iva_porcentaje)||21)/100;
+  return tot>0 ? Math.round(tot/(1+pct)*100)/100 : 0;
+};
+
+// Mueve el archivo de una factura a la subcarpeta "Eliminadas" en Drive
+async function moverArchivoAEliminadas(factura) {
+  if (!factura.drive_url || !APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT") return;
+  const match = (factura.drive_url || "").match(/\/file\/d\/([^/?]+)/);
+  if (!match) return;
+  const fileId = match[1];
+  const fecha = factura.fecha || "";
+  const mes = parseInt(fecha.split("/")[1]) || new Date().getMonth()+1;
+  const anyo = fecha.split("/")[2] || new Date().getFullYear().toString();
+  const trimestre = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
+  try {
+    await fetch("/api/ai-extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "drive-move",
+        appsScriptUrl: APPS_SCRIPT_URL,
+        fileId,
+        trimestre,
+        anyo,
+        tipo: factura.tipo || "gasto",
+      }),
+    });
+  } catch(e) { /* silently ignore — el registro se elimina igualmente */ }
+}
+
 // ── CSS global ───────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
@@ -214,6 +249,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .ib.del:hover{border-color:rgba(180,60,40,.4);color:#8B3A2A}
 .file-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border:.5px solid #D4C5A9;color:#9C8E7A}
 .file-tag.has{color:#8B6914;border-color:rgba(184,150,46,.35);background:rgba(184,150,46,.05)}
+.importe-detail{font-size:12px;color:#9C8E7A;margin-top:2px;line-height:1.3}
 .tfoot{padding:13px 18px;border-top:.5px solid #D4C5A9;display:flex;justify-content:space-between;align-items:center;background:#EDE5D0}
 .tfoot-count{font-size:14px;letter-spacing:.15em;text-transform:uppercase;color:#9C8E7A}
 .tfoot-tots{display:flex;gap:22px}
@@ -342,6 +378,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .ch-subtabs{flex-wrap:wrap}
   .charts-grid .ch-card{padding:18px 14px}
   .col-hide-mobile{display:none}
+  .importe-detail{display:none}
   th,td{padding:8px 8px;font-size:13px}
 }
 @media(max-width:480px){
@@ -711,7 +748,7 @@ function ViewSubida({ onSaved, toast }) {
       setFiles(p=>p.map(f=>f.id===item.id?{...f,status:"done"}:f));
 
       if(driveUrl) toast(`Guardado en Drive (${trimestre} ${anyo}) ✓`);
-      else toast("Guardado en Supabase ✓ (Drive no configurado)");
+      else toast("Guardado ✓");
 
       onSaved();
     } catch(e) {
@@ -831,7 +868,7 @@ function ViewSubida({ onSaved, toast }) {
 
       {Object.keys(results).length>0&&(
         <div style={{marginTop:36}}>
-          <div style={{fontSize:11,letterSpacing:".22em",textTransform:"uppercase",color:"#9C8E7A",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>Revisa y guarda en Supabase<span style={{flex:1,height:".5px",background:"#D4C5A9",display:"block"}}/></div>
+          <div style={{fontSize:11,letterSpacing:".22em",textTransform:"uppercase",color:"#9C8E7A",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>Revisa y guarda<span style={{flex:1,height:".5px",background:"#D4C5A9",display:"block"}}/></div>
           {files.filter(f=>results[f.id]).map(item=>{
             const r=results[item.id],isSaved=saved[item.id];
             return (
@@ -839,7 +876,7 @@ function ViewSubida({ onSaved, toast }) {
                 <div className="rc-hd">
                   <span className="rc-name">{item.file.name}</span>
                   <div style={{display:"flex",gap:7}}>
-                    {isSaved&&<span className="badge badge-ok">✓ En Supabase</span>}
+                    {isSaved&&<span className="badge badge-ok">✓ Guardado</span>}
                     {r._duplicado&&<span className="badge" style={{background:"rgba(180,30,20,.12)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.5)",fontSize:13,fontWeight:600,padding:"4px 12px"}}>⚠ DUPLICADA</span>}
                     <span className={"badge badge-"+(r.tipo==="gasto"?"gasto":"ingreso")}>{r.tipo==="gasto"?"Gasto":"Ingreso"}</span>
                   </div>
@@ -855,8 +892,8 @@ function ViewSubida({ onSaved, toast }) {
                 {!isSaved&&(
                   <div className="rc-act">
                     <button className="btn-sm" onClick={()=>removeFile(item.id)}>Descartar</button>
-                    <button className="btn-ink" onClick={()=>saveFactura(item)} disabled={["processing","uploading"].includes(item.status)}>
-                      {I.upload}<span>Guardar en Supabase</span>
+                    <button className="btn-sm" style={{background:"#2C2417",color:"#F5F0E8",borderColor:"#2C2417"}} onClick={()=>saveFactura(item)} disabled={["processing","uploading"].includes(item.status)}>
+                      {["processing","uploading"].includes(item.status)?"Guardando...":"Guardar"}
                     </button>
                   </div>
                 )}
@@ -1107,7 +1144,8 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
     }catch(e){toast("Error: "+e.message,"err");}
   };
 
-  const deleteF=async(id)=>{
+  const deleteF=async(factura)=>{
+    const id = typeof factura === "object" ? factura.id : factura;
     // Si es histórico, borrarlo del array de históricos
     if(String(id).startsWith("hist_")) {
       if(!window.confirm("¿Eliminar este registro?")) return;
@@ -1118,6 +1156,10 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
       return;
     }
     if(!window.confirm("¿Mover esta factura a la papelera?"))return;
+    // Mover archivo en Drive a carpeta "Eliminadas" (si existe)
+    if(typeof factura === "object" && factura.drive_url) {
+      await moverArchivoAEliminadas(factura);
+    }
     try{
       const supa=await db();
       const{error}=await supa.from("facturas").update({eliminado_en: new Date().toISOString()}).eq("id",String(id));
@@ -1163,8 +1205,11 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
       setHistorico(nuevos);
       await guardarHistorico(nuevos);
     }
-    // Borrar de Supabase (papelera)
+    // Borrar de Supabase (papelera) + mover en Drive
     if(supaIds.length>0) {
+      // Mover archivos en Drive a "Eliminadas"
+      const facturasSelec = filtered.filter(f=>supaIds.includes(f.id)&&f.drive_url);
+      await Promise.all(facturasSelec.map(f=>moverArchivoAEliminadas(f)));
       try {
         const supa = await db();
         await supa.from("facturas").update({eliminado_en: new Date().toISOString()}).in("id", supaIds);
@@ -1182,6 +1227,12 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const nG=filtered.filter(f=>f.tipo==="gasto").length;
   const nI=filtered.filter(f=>f.tipo==="ingreso").length;
   const pend=filtered.filter(f=>f.estado==="pendiente").length;
+
+  // Última fecha registrada por tipo (sobre todos los datos, no solo filtrados)
+  const allGastos   = [...facturas.filter(f=>!f.eliminado_en&&f.tipo==="gasto"),   ...historico.filter(f=>f.tipo==="gasto")];
+  const allIngresos = [...facturas.filter(f=>!f.eliminado_en&&f.tipo==="ingreso"), ...historico.filter(f=>f.tipo==="ingreso")];
+  const lastFechaGasto   = allGastos.length>0   ? allGastos.sort((a,b)=>pD(b.fecha)-pD(a.fecha))[0]?.fecha   : null;
+  const lastFechaIngreso = allIngresos.length>0 ? allIngresos.sort((a,b)=>pD(b.fecha)-pD(a.fecha))[0]?.fecha : null;
   const Arr=({f})=>sortField===f?<span style={{marginLeft:4,opacity:.7}}>{sortDir==="asc"?"↑":"↓"}</span>:<span style={{marginLeft:4,opacity:.2}}>↕</span>;
 
   return (
@@ -1220,6 +1271,16 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
           <div className="pill"><span className="pill-dot" style={{background:"#B8962E"}}/>IVA repercutido<span className="pill-val" style={{color:"#8B6914"}}>{fmt(ivaI)}</span></div>
           <div className="pill"><span className="pill-dot" style={{background:"#2C2417"}}/>Nº facturas<span className="pill-val">{nI}</span></div>
         </>}
+      </div>
+
+      {/* Última fecha registrada */}
+      <div style={{display:"flex",gap:22,marginBottom:18,flexWrap:"wrap"}}>
+        {(vistaTab==="todas"||vistaTab==="gastos")&&lastFechaGasto&&(
+          <span style={{fontSize:13,color:"#9C8E7A",fontStyle:"italic"}}>Último gasto: <strong style={{color:"#5C4A2A",fontStyle:"normal"}}>{lastFechaGasto}</strong></span>
+        )}
+        {(vistaTab==="todas"||vistaTab==="ingresos")&&lastFechaIngreso&&(
+          <span style={{fontSize:13,color:"#9C8E7A",fontStyle:"italic"}}>Último ingreso: <strong style={{color:"#5C4A2A",fontStyle:"normal"}}>{lastFechaIngreso}</strong></span>
+        )}
       </div>
 
       <div className="fl-bar">
@@ -1267,31 +1328,18 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
         <button className="btn-sm" onClick={()=>{resetF();setFiltroAnyo(_anyoActual);setFiltroTrim(_trimActual);}}>Limpiar</button>
       </div>
 
-      {/* Botón importar Excel histórico */}
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"12px 18px",background:"rgba(90,100,180,.06)",border:".5px solid rgba(90,100,180,.2)"}}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3A3A8B" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span style={{fontSize:14,color:"#3A3A8B",letterSpacing:".1em",textTransform:"uppercase"}}>Datos históricos</span>
-        {cargandoHist&&<span style={{fontSize:13,color:"#9C8E7A",fontStyle:"italic"}}>Cargando...</span>}
-        {!cargandoHist&&historico.length>0&&<span style={{fontSize:13,color:"#5A5A9E",fontStyle:"italic"}}>{historico.length} filas · compartidas con el equipo</span>}
-        <input ref={xlsxRef} type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={importarExcel}/>
-        <button className="btn-sm" style={{marginLeft:"auto",borderColor:"rgba(90,100,180,.3)",color:"#3A3A8B"}} onClick={()=>xlsxRef.current.click()} disabled={importando}>
-          {importando?"Leyendo...":"+ Subir Excel histórico"}
-        </button>
-        {historico.length>0&&<>
-          <span style={{fontSize:13,color:"#5A5A9E",fontStyle:"italic"}}>{historico.length} filas · guardadas en este navegador</span>
-          <button className="btn-sm" style={{color:"#8B3A2A",borderColor:"rgba(180,60,40,.3)"}} onClick={async()=>{if(window.confirm("¿Borrar todos los datos históricos? Afecta a todo el equipo.")){setHistorico([]);await guardarHistorico([]);}}}>Limpiar</button>
-        </>}
-      </div>
-
       <div className="twrap">
         <table>
           <thead><tr>
             <th style={{width:36}}><input type="checkbox" onChange={selectAll} checked={selected.size===filtered.length&&filtered.length>0} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></th>
             <th>Tipo</th>
             <th className={`sort${sortField==="fecha"?" sorted":""}`} onClick={()=>toggleSort("fecha")}>Fecha<Arr f="fecha"/></th>
-            <th>Nº Factura</th><th>Proveedor / Cliente</th><th className="col-hide-mobile">Categoría</th>
-            <th className={`sort${sortField==="total"?" sorted":""}`} onClick={()=>toggleSort("total")}>Total<Arr f="total"/></th>
-            <th className="col-hide-mobile">IVA</th><th>Estado</th><th className="col-hide-mobile">Archivo</th><th>Acciones</th>
+            <th className="col-hide-mobile">Nº Factura</th>
+            <th>Proveedor / Cliente</th>
+            <th className={`sort${sortField==="total"?" sorted":""}`} onClick={()=>toggleSort("total")}>Importe<Arr f="total"/></th>
+            <th className="col-hide-mobile">Categoría</th>
+            <th>Estado</th>
+            <th>Acciones</th>
           </tr></thead>
           <tbody>
             {loading&&<tr><td colSpan={10}><div className="loading-row"><div className="spin"/><span>Cargando desde Supabase...</span></div></td></tr>}
@@ -1309,16 +1357,19 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     </div>}
                   </td>
                   <td>{isE?<input className="ii" value={d.fecha||""} onChange={e=>setEditData(p=>({...p,fecha:e.target.value}))} style={{width:95}}/>:f.fecha}</td>
-                  <td style={{color:"#9C8E7A",fontSize:13}}>{isE?<input className="ii" value={d.numero_factura||""} onChange={e=>setEditData(p=>({...p,numero_factura:e.target.value}))}/>:f.numero_factura}</td>
+                  <td className="col-hide-mobile" style={{color:"#9C8E7A",fontSize:13}}>{isE?<input className="ii" value={d.numero_factura||""} onChange={e=>setEditData(p=>({...p,numero_factura:e.target.value}))}/>:f.numero_factura}</td>
                   <td style={{fontWeight:500}}>{isE?<input className="ii" value={d.proveedor_cliente||""} onChange={e=>setEditData(p=>({...p,proveedor_cliente:e.target.value}))}/>:f.proveedor_cliente}</td>
+                  <td style={{fontWeight:500,color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>
+                    {isE
+                      ? <input className="ii" type="number" value={d.total||0} onChange={e=>setEditData(p=>({...p,total:e.target.value}))} style={{width:85}}/>
+                      : <><div>{fmt(f.total)}</div>{(Number(f.base_imponible)||Number(f.iva_importe))>0&&<div className="importe-detail">Base {fmt(calcBase(f))} · IVA {fmt(calcIva(f))}</div>}</>
+                    }
+                  </td>
                   <td className="col-hide-mobile" style={{fontSize:12,color:"#5C4A2A"}}>{isE?<select className="is" value={d.categoria||""} onChange={e=>setEditData(p=>({...p,categoria:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select>:f.categoria}</td>
-                  <td style={{fontWeight:500,color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>{isE?<input className="ii" type="number" value={d.total||0} onChange={e=>setEditData(p=>({...p,total:e.target.value}))} style={{width:85}}/>:fmt(f.total)}</td>
-                  <td className="col-hide-mobile" style={{fontSize:13,color:"#9C8E7A"}}>{isE?<input className="ii" value={d.iva_porcentaje||21} onChange={e=>setEditData(p=>({...p,iva_porcentaje:e.target.value}))} style={{width:36}}/>:(f.iva_porcentaje||21)+"%"}</td>
                   <td>{isE?<select className="is" value={d.estado||"pendiente"} onChange={e=>setEditData(p=>({...p,estado:e.target.value}))}><option value="pagada">Pagada</option><option value="pendiente">Pendiente</option></select>:<span className={"badge badge-"+f.estado}><span className={"e-dot dot-"+f.estado}/>{f.estado}</span>}</td>
-                  <td className="col-hide-mobile"><span className={"file-tag"+(f.archivo_nombre?" has":"")}>{f.archivo_tipo==="image"?<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>:<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>}{f.archivo_tipo?f.archivo_tipo.toUpperCase():"—"}</span></td>
                   <td><div className="acts">
                     {isE?<><button className="ib sv" onClick={saveEdit}>{I.ok}</button><button className="ib" onClick={cancelEdit}>{I.x}</button></>
-                    :<><button className="ib eye" onClick={()=>setVisor(f)}>{I.eye}</button>{!f._historico&&<button className="ib dl" onClick={()=>downloadFile(f)}>{I.down}</button>}<button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button><button className="ib del" onClick={()=>deleteF(f.id)}>{I.del}</button></>}
+                    :<><button className="ib eye" title={f.drive_url||f.archivo_url?"Abrir en Drive":"Ver detalles"} onClick={()=>{const u=f.drive_url||f.archivo_url;if(u)window.open(u,"_blank");else setVisor(f);}}>{I.eye}</button><button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button><button className="ib del" onClick={()=>deleteF(f)}>{I.del}</button></>}
                   </div></td>
                 </tr>
               );
@@ -1545,18 +1596,7 @@ function ViewDashboard({ facturas, historico }) {
           <div className="ch-sub">{vista==="ingresos"?"Distribución ingresos":"Distribución gastos"}</div>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={catData} cx="50%" cy="50%" innerRadius="40%" outerRadius="70%" paddingAngle={3} dataKey="value"
-                label={({cx,cy,midAngle,innerRadius,outerRadius,percent,name})=>{
-                  const RADIAN=Math.PI/180;
-                  const radius=innerRadius+(outerRadius-innerRadius)*1.5;
-                  const x=cx+radius*Math.cos(-midAngle*RADIAN);
-                  const y=cy+radius*Math.sin(-midAngle*RADIAN);
-                  if(percent<0.04) return null;
-                  return <text x={x} y={y} textAnchor={x>cx?"start":"end"} dominantBaseline="central" style={{fontFamily:"Cormorant Garamond,serif",fontSize:13,fill:"#2C2417",fontWeight:500}}>
-                    {`${(percent*100).toFixed(0)}%`}
-                  </text>;
-                }}
-                labelLine={{stroke:"#D4C5A9",strokeWidth:1}}>
+              <Pie data={catData} cx="50%" cy="50%" innerRadius="40%" outerRadius="70%" paddingAngle={3} dataKey="value">
                 {catData.map((_,i)=><Cell key={i} fill={CAT_COLORS[i%CAT_COLORS.length]}/>)}
               </Pie>
               <Tooltip content={({active,payload})=>{
