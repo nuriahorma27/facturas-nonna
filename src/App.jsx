@@ -356,11 +356,32 @@ const I = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────
+// Comprime una imagen a máx 1600px y calidad 0.82 para no superar límites del serverless
+function compressImage(file, maxPx = 1600, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob || file), "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function extractWithAI(file) {
-  const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
   const isPdf = file.type==="application/pdf";
-  const rawType = file.type||"image/jpeg";
-  const mediaType = rawType.match(/heic|heif/i) ? "image/jpeg" : rawType;
+  // Comprimir imágenes para no superar el límite de body del serverless (~4MB)
+  const fileToSend = isPdf ? file : await compressImage(file);
+  const b64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(fileToSend);});
+  const mediaType = "image/jpeg";
   const block = isPdf
     ? {type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}
     : {type:"image",source:{type:"base64",media_type:mediaType,data:b64}};
@@ -524,10 +545,11 @@ function ViewSubida({ onSaved, toast }) {
         }
       }
 
-      const tipo = item.file.type.startsWith("image")?"image":"pdf";
+      const mimeType = item.file.type || (item.file.name.match(/\.pdf$/i) ? "application/pdf" : "image/jpeg");
+      const tipo = mimeType.startsWith("image")?"image":"pdf";
       const path = `${Date.now()}_${item.file.name.replace(/\s+/g,"_")}`;
 
-      const {error:upErr} = await supa.storage.from("facturas").upload(path,item.file,{contentType:item.file.type,upsert:true});
+      const {error:upErr} = await supa.storage.from("facturas").upload(path,item.file,{contentType:mimeType,upsert:true});
       if(upErr) throw upErr;
       const {data:{publicUrl}} = supa.storage.from("facturas").getPublicUrl(path);
 
