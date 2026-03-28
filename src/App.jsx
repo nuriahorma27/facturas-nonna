@@ -376,7 +376,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mob-edit-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:#2C2417;margin-bottom:18px;font-weight:600}
 .mob-edit-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
 .mob-edit-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A}
-.mob-edit-inp{border:none;border-bottom:.5px solid #D4C5A9;background:transparent;font-family:'Cormorant Garamond',serif;font-size:16px;color:#2C2417;padding:6px 0;outline:none;width:100%}
+.mob-edit-inp{border:none;border-bottom:.5px solid #D4C5A9;background:transparent;font-family:'Cormorant Garamond',serif;font-size:16px;color:#2C2417;padding:6px 0;outline:none;width:100%;text-align:left}
 .mob-edit-foot{display:flex;gap:10px;margin-top:20px}
 .acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
@@ -1652,6 +1652,12 @@ function ViewDashboard({ facturas, historico }) {
   const ivaN=ivaR-ivaS;
   const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente"&&!f.eliminado_en);
 
+  // Período anterior (mismo trimestre, año anterior) — debe ir antes de chartData
+  const anyoAnt = String(Number(filtroAnyo)-1);
+  const baseAnt = filterPeriod([...facturas.filter(f=>!f.eliminado_en),...(historico||[])], anyoAnt, filtroTrim);
+  const tIant = baseAnt.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
+  const tGant = baseAnt.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
+
   const chartData = useMemo(()=>{
     const MESES_LBL=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
     const allTodos = [...facturas.filter(f=>!f.eliminado_en),...(historico||[])];
@@ -1710,11 +1716,6 @@ function ViewDashboard({ facturas, historico }) {
   const barSerie = vista==="gastos"?"gastos":vista==="ingresos"?"ingresos":cSub;
   const barCol   = {gastos:"#C25A4A",ingresos:"#5A8A5E",gastos24:"rgba(194,90,74,.35)",ingresos24:"rgba(90,138,94,.35)"};
 
-  // Calcular totales período anterior (mismo trimestre, año anterior)
-  const anyoAnt = String(Number(filtroAnyo)-1);
-  const baseAnt = filterPeriod([...facturas.filter(f=>!f.eliminado_en),...(historico||[])], anyoAnt, filtroTrim);
-  const tIant = baseAnt.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
-  const tGant = baseAnt.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
   const deltaI = tIant>0?((tI-tIant)/tIant*100).toFixed(1):null;
   const deltaG = tGant>0?((tG-tGant)/tGant*100).toFixed(1):null;
 
