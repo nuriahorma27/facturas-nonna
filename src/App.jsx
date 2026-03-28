@@ -420,8 +420,8 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .iva-grid{grid-template-columns:1fr 1fr}
   table{width:100%}
   .twrap{-webkit-overflow-scrolling:touch}
-  .btn-ink span{display:none}
-  .btn-ink svg{margin:0}
+  .btn-ink{padding:10px 16px;font-size:13px;letter-spacing:.14em}
+  .btn-ink svg{width:16px;height:16px;flex-shrink:0}
   .col-hide-mobile{display:none}
   .twrap{display:none}
   .mob-cards{display:block}
