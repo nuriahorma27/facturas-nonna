@@ -383,7 +383,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 }
 @media(max-width:480px){
   .sidebar{display:none}
-  .main{width:100vw}
+  .main{width:100vw;padding-bottom:64px}
   .view{padding:16px 12px}
   .kpi-grid{grid-template-columns:1fr}
   .iva-grid{grid-template-columns:1fr 1fr}
@@ -392,6 +392,13 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .btn-ink span{display:none}
   .btn-ink svg{margin:0}
   .col-hide-mobile{display:none}
+}
+.mob-nav{display:none}
+@media(max-width:480px){
+  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:58px;background:#2C2417;border-top:.5px solid rgba(255,255,255,.12);z-index:200}
+  .mob-nav-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9C8E7A;cursor:pointer;font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;border:none;background:none;padding:0}
+  .mob-nav-it.active{color:#B8962E}
+  .mob-nav-it svg{width:20px;height:20px}
 }
 `;
 
@@ -2049,6 +2056,13 @@ export default function AtelierApp() {
           {vista==="exportar"  && <ViewExportar  facturas={facturas} toast={showToast}/>}
           {vista==="historial" && <ViewHistorial onRefresh={cargar} toast={showToast}/>}
         </main>
+        <nav className="mob-nav">
+          {NAV.map(n=>(
+            <button key={n.id} className={"mob-nav-it"+(vista===n.id?" active":"")} onClick={()=>setVista(n.id)}>
+              {n.icon}<span>{n.label}</span>
+            </button>
+          ))}
+        </nav>
       </div>
       {toast&&<div className={"toast toast-"+toast.type}>{toast.msg}</div>}
     </>
