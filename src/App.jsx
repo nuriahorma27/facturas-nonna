@@ -353,10 +353,13 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mf-lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A;margin-bottom:3px}
 .mf-val{font-size:16px;color:#2C2417}
 .modal-ft{padding:14px 26px;border-top:.5px solid #D4C5A9;display:flex;gap:9px;justify-content:flex-end;background:#EDE5D0}
+.tipo-full{display:flex;gap:5px;flex-wrap:wrap}
 .tipo-short{display:none;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700}
 .estado-dot{display:none;width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .acts-mob{display:none;position:relative}
 .mob-nav{display:none}
+.importe-mob{display:none;font-size:11px;color:#9C8E7A;margin-top:2px}
+.prov-cell{max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
 .acts-drop button:last-child{border-bottom:none}
@@ -409,6 +412,10 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .estado-dot{display:inline-block}
   .acts-desk{display:none}
   .acts-mob{display:block}
+  .importe-mob{display:block}
+  .twrap{overflow-x:hidden}
+  .prov-cell{max-width:90px}
+  th,td{padding:6px 5px;font-size:12px}
   .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:58px;background:#2C2417;border-top:.5px solid rgba(255,255,255,.12);z-index:200}
   .mob-nav-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9C8E7A;cursor:pointer;font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;border:none;background:none;padding:0}
   .mob-nav-it.active{color:#B8962E}
@@ -1389,7 +1396,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                   <td>
                     {isE?<select className="is" value={d.tipo} onChange={e=>setEditData(p=>({...p,tipo:e.target.value}))}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select>
                     :<>
-                      <div className="tipo-full" style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                      <div className="tipo-full">
                         <span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span>
                         {f.es_duplicada&&<span className="badge" style={{background:"rgba(180,30,20,.1)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.4)"}}>⚠ Dup.</span>}
                       </div>
@@ -1406,13 +1413,13 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     }
                   </td>
                   <td className="col-hide-mobile" style={{color:"#9C8E7A",fontSize:13}}>{isE?<input className="ii" value={d.numero_factura||""} onChange={e=>setEditData(p=>({...p,numero_factura:e.target.value}))}/>:f.numero_factura}</td>
-                  <td style={{fontWeight:500}}>{isE?<input className="ii" value={d.proveedor_cliente||""} onChange={e=>setEditData(p=>({...p,proveedor_cliente:e.target.value}))}/>:f.proveedor_cliente}</td>
+                  <td className="prov-cell" style={{fontWeight:500}}>{isE?<input className="ii" value={d.proveedor_cliente||""} onChange={e=>setEditData(p=>({...p,proveedor_cliente:e.target.value}))}/>:f.proveedor_cliente}</td>
                   <td className="col-hide-mobile" style={{textAlign:"right",color:"#5C4A2A",fontSize:13}}>{isE?"":fmt(calcBase(f))}</td>
                   <td className="col-hide-mobile" style={{textAlign:"right",color:"#5C4A2A",fontSize:13}}>{isE?"":fmt(calcIva(f))}</td>
                   <td style={{fontWeight:500,color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E",textAlign:"right"}}>
                     {isE
                       ? <input className="ii" type="number" value={d.total||0} onChange={e=>setEditData(p=>({...p,total:e.target.value}))} style={{width:85}}/>
-                      : fmt(f.total)
+                      : <><div>{fmt(f.total)}</div>{(calcBase(f)||calcIva(f))>0&&<div className="importe-mob">B:{fmt(calcBase(f))} I:{fmt(calcIva(f))}</div>}</>
                     }
                   </td>
                   <td className="col-hide-mobile" style={{fontSize:12,color:"#5C4A2A"}}>{isE?<select className="is" value={d.categoria||""} onChange={e=>setEditData(p=>({...p,categoria:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select>:f.categoria}</td>
