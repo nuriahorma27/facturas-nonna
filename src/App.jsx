@@ -353,6 +353,15 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mf-lbl{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A;margin-bottom:3px}
 .mf-val{font-size:16px;color:#2C2417}
 .modal-ft{padding:14px 26px;border-top:.5px solid #D4C5A9;display:flex;gap:9px;justify-content:flex-end;background:#EDE5D0}
+.tipo-short{display:none;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700}
+.estado-dot{display:none;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.acts-mob{display:none;position:relative}
+.acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
+.acts-drop button:last-child{border-bottom:none}
+.acts-drop button:hover{background:#EDE5D0}
+.acts-drop button svg{width:14px;height:14px;flex-shrink:0}
+.acts-drop .del-opt{color:#8B3A2A}
 
 @media(max-width:900px){
   .sidebar{width:56px}.sb-name,.sb-sub,.sb-item span{display:none}
@@ -399,23 +408,12 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .estado-dot{display:inline-block}
   .acts-desk{display:none}
   .acts-mob{display:block}
-}
-.tipo-short{display:none;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700}
-.estado-dot{display:none;width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.acts-mob{display:none;position:relative}
-.acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
-.acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
-.acts-drop button:last-child{border-bottom:none}
-.acts-drop button:hover{background:#EDE5D0}
-.acts-drop button svg{width:14px;height:14px;flex-shrink:0}
-.acts-drop .del-opt{color:#8B3A2A}
-.mob-nav{display:none}
-@media(max-width:480px){
   .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:58px;background:#2C2417;border-top:.5px solid rgba(255,255,255,.12);z-index:200}
   .mob-nav-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9C8E7A;cursor:pointer;font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;border:none;background:none;padding:0}
   .mob-nav-it.active{color:#B8962E}
   .mob-nav-it svg{width:20px;height:20px}
 }
+.mob-nav{display:none}
 `;
 
 // ── Iconos ───────────────────────────────────────────────────
@@ -1403,7 +1401,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     {editingFechaReal===f.id
                       ? <input type="date" className="ii" defaultValue={f.fecha_real||""} autoFocus style={{width:120}} onBlur={e=>saveFechaReal(f,e.target.value)} onChange={e=>e.target.value&&saveFechaReal(f,e.target.value)}/>
                       : <span style={{cursor:"pointer",display:"flex",alignItems:"center",gap:4}} onClick={()=>setEditingFechaReal(f.id)}>
-                          {f.fecha_real||<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{opacity:.4}}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>}
+                          {f.fecha_real ? (()=>{const[y,m,d]=(f.fecha_real||"").split("-");return d?`${d}/${m}/${y}`:f.fecha_real;})() : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{opacity:.4}}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>}
                         </span>
                     }
                   </td>
