@@ -44,28 +44,19 @@ function httpsRequestRaw(options, body, redirectCount = 0) {
   });
 }
 
-// Construye un cuerpo application/x-www-form-urlencoded
-// (compatible con e.parameter en Apps Script, tanto versión antigua como nueva)
-function buildFormBody(params) {
-  return Object.entries(params)
-    .map(([k, v]) => encodeURIComponent(k) + "=" + encodeURIComponent(v == null ? "" : v))
-    .join("&");
-}
-
 async function callAppsScript(appsScriptUrl, params) {
   const url = new URL(appsScriptUrl);
-  const formBody = buildFormBody(params);
+  const jsonBody = JSON.stringify(params);
   const options = {
     hostname: url.hostname,
     path: url.pathname + url.search,
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Content-Length": Buffer.byteLength(formBody),
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(jsonBody),
     },
   };
-  const result = await httpsRequestRaw(options, formBody);
-  // Intentar parsear la respuesta JSON del Apps Script
+  const result = await httpsRequestRaw(options, jsonBody);
   try {
     return JSON.parse(result.body);
   } catch(e) {
@@ -145,4 +136,9 @@ module.exports = async function(req, res) {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
+};
+
+// Aumentar límite del body para PDFs e imágenes en base64 (por defecto Vercel = 1MB)
+module.exports.config = {
+  api: { bodyParser: { sizeLimit: "10mb" } },
 };
