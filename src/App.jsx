@@ -406,7 +406,12 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .tab:nth-child(odd){border-right:.5px solid #D4C5A9}
   .period-tabs{display:grid;grid-template-columns:1fr 1fr;flex-wrap:unset;gap:6px}
   .ptab{padding:10px 8px;font-size:13px;text-align:center}
-  .exp-bar{flex-direction:column;align-items:flex-start}
+  .exp-bar{flex-direction:column;align-items:stretch;gap:8px;padding:16px}
+  .exp-lbl{margin-bottom:4px}
+  .scope-btn{padding:12px;text-align:center;font-size:13px}
+  .exp-bar>div{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;margin-left:0!important}
+  .trim-sel{width:100%;padding:12px;font-size:14px}
+  .prev-tabs{display:grid;grid-template-columns:1fr 1fr}
   .sum-grid{grid-template-columns:1fr 1fr}
   .ch-subtabs{flex-wrap:wrap}
   .charts-grid .ch-card{padding:18px 14px}
@@ -425,6 +430,12 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .period-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .ptab{padding:10px 8px;font-size:13px;text-align:center}
   .ch-subtabs{display:grid;grid-template-columns:1fr 1fr}
+  .exp-bar{flex-direction:column;align-items:stretch;gap:8px;padding:14px}
+  .scope-btn{padding:12px;text-align:center;font-size:13px}
+  .exp-bar>div{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;margin-left:0!important}
+  .trim-sel{width:100%;padding:12px;font-size:14px}
+  .prev-tabs{display:grid;grid-template-columns:1fr 1fr}
+  .prev-tab{padding:10px 6px;font-size:12px;text-align:center}
   table{width:100%}
   .twrap{-webkit-overflow-scrolling:touch}
   .btn-ink{padding:10px 16px;font-size:13px;letter-spacing:.14em}
