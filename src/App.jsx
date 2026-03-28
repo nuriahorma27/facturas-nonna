@@ -1286,6 +1286,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const Arr=({f})=>sortField===f?<span style={{marginLeft:4,opacity:.7}}>{sortDir==="asc"?"↑":"↓"}</span>:<span style={{marginLeft:4,opacity:.2}}>↕</span>;
 
   return (
+    <>
     <div className="view">
       <div className="page-header" style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:28}}>
         <div><div className="eyebrow">Módulo 3</div><h1 className="view-title" style={{marginBottom:0}}>Listado de <em>facturas</em></h1></div>
@@ -1558,44 +1559,46 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
         </div>
       )}
 
-      {mobEdit&&(
-        <div className="mob-edit" onClick={e=>{if(e.target===e.currentTarget)setMobEdit(null);}}>
-          <div className="mob-edit-sheet">
-            <div className="mob-edit-title">Editar factura</div>
-            {[["Fecha","fecha"],["Nº Factura","numero_factura"],["Proveedor / Cliente","proveedor_cliente"],["Base imponible","base_imponible"],["IVA %","iva_porcentaje"],["IVA importe","iva_importe"],["Total","total"]].map(([lbl,fld])=>(
-              <div key={fld} className="mob-edit-row">
-                <div className="mob-edit-lbl">{lbl}</div>
-                <input className="mob-edit-inp" defaultValue={mobEdit[fld]||""} onChange={e=>setMobEdit(p=>({...p,[fld]:e.target.value}))}/>
-              </div>
-            ))}
-            <div className="mob-edit-row">
-              <div className="mob-edit-lbl">Categoría</div>
-              <select className="mob-edit-inp" value={mobEdit.categoria||""} onChange={e=>setMobEdit(p=>({...p,categoria:e.target.value}))}>
-                {CATS.map(c=><option key={c}>{c}</option>)}
-              </select>
+    </div>
+
+    {mobEdit&&(
+      <div className="mob-edit" onClick={e=>{if(e.target===e.currentTarget)setMobEdit(null);}}>
+        <div className="mob-edit-sheet">
+          <div className="mob-edit-title">Editar factura</div>
+          {[["Fecha","fecha"],["Nº Factura","numero_factura"],["Proveedor / Cliente","proveedor_cliente"],["Base imponible","base_imponible"],["IVA %","iva_porcentaje"],["IVA importe","iva_importe"],["Total","total"]].map(([lbl,fld])=>(
+            <div key={fld} className="mob-edit-row">
+              <div className="mob-edit-lbl">{lbl}</div>
+              <input className="mob-edit-inp" defaultValue={mobEdit[fld]||""} onChange={e=>setMobEdit(p=>({...p,[fld]:e.target.value}))}/>
             </div>
-            <div className="mob-edit-row">
-              <div className="mob-edit-lbl">Estado</div>
-              <select className="mob-edit-inp" value={mobEdit.estado||"pendiente"} onChange={e=>setMobEdit(p=>({...p,estado:e.target.value}))}>
-                <option value="pagada">Pagada</option>
-                <option value="pendiente">Pendiente</option>
-              </select>
-            </div>
-            <div className="mob-edit-foot">
-              <button className="btn-ink" onClick={async()=>{
-                try{
-                  const supa=await db();
-                  const{error}=await supa.from("facturas").update({tipo:mobEdit.tipo,fecha:mobEdit.fecha,numero_factura:mobEdit.numero_factura,proveedor_cliente:mobEdit.proveedor_cliente,base_imponible:Number(mobEdit.base_imponible),iva_porcentaje:Number(mobEdit.iva_porcentaje),iva_importe:Number(mobEdit.iva_importe),total:Number(mobEdit.total),categoria:mobEdit.categoria,estado:mobEdit.estado}).eq("id",mobEdit.id);
-                  if(error)throw error;
-                  toast("Guardado ✓");setMobEdit(null);onRefresh();
-                }catch(e){toast("Error: "+e.message,"err");}
-              }}>Guardar</button>
-              <button className="btn-sm" onClick={()=>setMobEdit(null)}>Cancelar</button>
-            </div>
+          ))}
+          <div className="mob-edit-row">
+            <div className="mob-edit-lbl">Categoría</div>
+            <select className="mob-edit-inp" value={mobEdit.categoria||""} onChange={e=>setMobEdit(p=>({...p,categoria:e.target.value}))}>
+              {CATS.map(c=><option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="mob-edit-row">
+            <div className="mob-edit-lbl">Estado</div>
+            <select className="mob-edit-inp" value={mobEdit.estado||"pendiente"} onChange={e=>setMobEdit(p=>({...p,estado:e.target.value}))}>
+              <option value="pagada">Pagada</option>
+              <option value="pendiente">Pendiente</option>
+            </select>
+          </div>
+          <div className="mob-edit-foot">
+            <button className="btn-ink" onClick={async()=>{
+              try{
+                const supa=await db();
+                const{error}=await supa.from("facturas").update({tipo:mobEdit.tipo,fecha:mobEdit.fecha,numero_factura:mobEdit.numero_factura,proveedor_cliente:mobEdit.proveedor_cliente,base_imponible:Number(mobEdit.base_imponible),iva_porcentaje:Number(mobEdit.iva_porcentaje),iva_importe:Number(mobEdit.iva_importe),total:Number(mobEdit.total),categoria:mobEdit.categoria,estado:mobEdit.estado}).eq("id",mobEdit.id);
+                if(error)throw error;
+                toast("Guardado ✓");setMobEdit(null);onRefresh();
+              }catch(e){toast("Error: "+e.message,"err");}
+            }}>Guardar</button>
+            <button className="btn-sm" onClick={()=>setMobEdit(null)}>Cancelar</button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    )}
+    </>
   );
 }
 
