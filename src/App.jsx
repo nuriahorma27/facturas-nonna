@@ -368,6 +368,8 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mc-total{font-size:20px;font-family:'Cormorant Garamond',serif;font-weight:600}
 .mc-detail{font-size:11px;color:#9C8E7A;margin-top:2px}
 .mc-acts{display:flex;gap:6px;align-items:center}
+.mc-acts .ib{border-color:#D4C5A9;color:#5C4A2A;width:34px;height:34px}
+.mc-acts .ib svg{width:16px;height:16px}
 .acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
 .acts-drop button:last-child{border-bottom:none}
