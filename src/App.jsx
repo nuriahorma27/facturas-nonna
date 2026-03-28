@@ -406,12 +406,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .tab:nth-child(odd){border-right:.5px solid #D4C5A9}
   .period-tabs{display:grid;grid-template-columns:1fr 1fr;flex-wrap:unset;gap:6px}
   .ptab{padding:10px 8px;font-size:13px;text-align:center}
-  .exp-bar{flex-direction:column;align-items:stretch;gap:8px;padding:16px}
-  .exp-lbl{margin-bottom:4px}
-  .scope-btn{padding:12px;text-align:center;font-size:13px}
-  .exp-bar>div{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;margin-left:0!important}
-  .trim-sel{width:100%;padding:12px;font-size:14px}
-  .prev-tabs{display:grid;grid-template-columns:1fr 1fr}
+  .exp-bar{flex-direction:column;align-items:flex-start}
   .sum-grid{grid-template-columns:1fr 1fr}
   .ch-subtabs{flex-wrap:wrap}
   .charts-grid .ch-card{padding:18px 14px}
@@ -430,12 +425,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .period-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .ptab{padding:10px 8px;font-size:13px;text-align:center}
   .ch-subtabs{display:grid;grid-template-columns:1fr 1fr}
-  .exp-bar{flex-direction:column;align-items:stretch;gap:8px;padding:14px}
-  .scope-btn{padding:12px;text-align:center;font-size:13px}
-  .exp-bar>div{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;margin-left:0!important}
-  .trim-sel{width:100%;padding:12px;font-size:14px}
-  .prev-tabs{display:grid;grid-template-columns:1fr 1fr}
-  .prev-tab{padding:10px 6px;font-size:12px;text-align:center}
+  .exp-bar{flex-direction:column;align-items:flex-start}
   table{width:100%}
   .twrap{-webkit-overflow-scrolling:touch}
   .btn-ink{padding:10px 16px;font-size:13px;letter-spacing:.14em}
@@ -853,7 +843,6 @@ function ViewSubida({ onSaved, toast }) {
 
   return (
     <div className="view">
-      <div className="eyebrow">Módulo 2</div>
       <h1 className="view-title">Subir <em>facturas</em></h1>
 
       {/* Toggle modo */}
@@ -1308,7 +1297,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
     <>
     <div className="view">
       <div className="page-header" style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:28}}>
-        <div><div className="eyebrow">Módulo 3</div><h1 className="view-title" style={{marginBottom:0}}>Listado de <em>facturas</em></h1></div>
+        <div><h1 className="view-title" style={{marginBottom:0}}>Listado de <em>facturas</em></h1></div>
         <div style={{display:"flex",gap:9,flexWrap:"wrap"}}>
           {selected.size>0&&<button className="btn-out" style={{borderColor:"rgba(180,30,20,.4)",color:"#8B1A0A"}} onClick={deleteSelected}>{I.del}<span>Eliminar {selected.size}</span></button>}
           <button className="btn-out" onClick={()=>window.alert("ZIP disponible en Netlify.")}>{I.zip}<span>ZIP</span></button>
@@ -1416,7 +1405,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
           </tr></thead>
           <tbody>
             {loading&&<tr><td colSpan={13}><div className="loading-row"><div className="spin"/><span>Cargando desde Supabase...</span></div></td></tr>}
-            {!loading&&filtered.length===0&&<tr><td colSpan={13} className="empty-row">{facturas.length===0?"Aún no hay facturas — sube la primera en el módulo 2":"Sin resultados con estos filtros"}</td></tr>}
+            {!loading&&filtered.length===0&&<tr><td colSpan={13} className="empty-row">{facturas.length===0?"Aún no hay facturas — sube la primera en Subir facturas":"Sin resultados con estos filtros"}</td></tr>}
             {!loading&&filtered.map((f,i)=>{
               const isE=editingId===f.id,d=isE?editData:f;
               return(
@@ -1561,7 +1550,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                         <span>Abrir en Drive</span>
                       </a>
                     </div>
-                  : <div className="modal-ph">{I.pdf}<span>{visor.archivo_nombre||"Sin archivo"}</span><small>Disponible tras subir desde el módulo 2</small></div>}
+                  : <div className="modal-ph">{I.pdf}<span>{visor.archivo_nombre||"Sin archivo"}</span><small>Disponible tras subir desde Subir facturas</small></div>}
               </div>
               <div className="modal-data">
                 <div className="modal-dt">Datos extraídos</div>
@@ -1762,7 +1751,6 @@ function ViewDashboard({ facturas, historico }) {
 
   return (
     <div className="view">
-      <div className="eyebrow">Módulo 4</div>
       <h1 className="view-title" style={{marginBottom:20}}>Dashboard <em>financiero</em></h1>
 
       <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:18,alignItems:"center"}}>
@@ -1978,7 +1966,6 @@ function ViewExportar({ facturas, toast }) {
 
   return (
     <div className="view">
-      <div className="eyebrow">Módulo 5</div>
       <h1 className="view-title">Exportar <em>datos</em></h1>
 
       <div className="exp-bar">
