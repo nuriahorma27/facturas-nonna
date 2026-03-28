@@ -1949,13 +1949,23 @@ function ViewDashboard({ facturas, historico }) {
 // ═══════════════════════════════════════════════════════════
 // VISTA: EXPORTAR
 // ═══════════════════════════════════════════════════════════
-function ViewExportar({ facturas, toast }) {
+function ViewExportar({ facturas, historico, toast }) {
   const [scope,     setScope]     = useState("todas");
   const [trimestre, setTrimestre] = useState("T1");
   const [prevTab,   setPrevTab]   = useState("resumen");
   const [exporting, setExporting] = useState(false);
 
-  const data = scope==="trimestre" ? facturas.filter(f=>f.trimestre===trimestre) : facturas;
+  // Combinar Supabase (sin eliminadas) + histórico Excel, con trimestre calculado
+  const todasLasFacturas = useMemo(()=>{
+    const supaActivas = facturas.filter(f=>!f.eliminado_en).map(f=>{
+      const mes = parseInt((f.fecha||"").split("/")[1])||0;
+      const trim = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
+      return {...f, trimestre: trim};
+    });
+    return [...supaActivas, ...(historico||[])];
+  }, [facturas, historico]);
+
+  const data = scope==="trimestre" ? todasLasFacturas.filter(f=>f.trimestre===trimestre) : todasLasFacturas;
   const gas  = data.filter(f=>f.tipo==="gasto");
   const ing  = data.filter(f=>f.tipo==="ingreso");
   const tI   = ing.reduce((s,f)=>s+Number(f.total),0);
@@ -1966,10 +1976,10 @@ function ViewExportar({ facturas, toast }) {
 
   const trimData = ["T1","T2","T3","T4"].map(t=>({
     t,
-    ing:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
-    gas:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
-    ivaR:facturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
-    ivaS:facturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
+    ing:todasLasFacturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
+    gas:todasLasFacturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+Number(f.total),0),
+    ivaR:todasLasFacturas.filter(f=>f.tipo==="ingreso"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
+    ivaS:todasLasFacturas.filter(f=>f.tipo==="gasto"&&f.trimestre===t).reduce((s,f)=>s+calcIva(f),0),
   }));
 
   const doExport=()=>{setExporting(true);try{buildExcel(data);}catch(e){window.alert("Error: "+e.message);}setExporting(false);};
@@ -2254,7 +2264,7 @@ export default function AtelierApp() {
           {vista==="subida"    && <ViewSubida    onSaved={cargar} toast={showToast}/>}
           {vista==="listado"   && <ViewListado   facturas={facturas} historico={historico} setHistorico={setHistorico} guardarHistorico={guardarHistorico} cargandoHist={cargandoHist} loading={loading} onRefresh={cargar} toast={showToast}/>}
           {vista==="dashboard" && <ViewDashboard facturas={facturas} historico={historico}/>}
-          {vista==="exportar"  && <ViewExportar  facturas={facturas} toast={showToast}/>}
+          {vista==="exportar"  && <ViewExportar  facturas={facturas} historico={historico} toast={showToast}/>}
           {vista==="historial" && <ViewHistorial onRefresh={cargar} toast={showToast}/>}
         </main>
         <nav className="mob-nav">
