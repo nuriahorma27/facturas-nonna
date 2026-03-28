@@ -355,6 +355,8 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mf-val{font-size:16px;color:#2C2417}
 .modal-ft{padding:14px 26px;border-top:.5px solid #D4C5A9;display:flex;gap:9px;justify-content:flex-end;background:#EDE5D0}
 .tipo-full{display:flex;gap:5px;flex-wrap:wrap}
+.tipo-short{display:none;font-size:11px;font-weight:700;padding:3px 7px;border-radius:2px}
+.importe-mob{display:none;font-size:11px;color:#9C8E7A;margin-top:2px;line-height:1.4}
 .estado-dot{display:none;width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .acts-mob{display:none;position:relative}
 .mob-nav{display:none}
@@ -417,6 +419,9 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .charts-grid .ch-card{padding:18px 14px}
   .col-hide-mobile{display:none}
   .importe-detail{display:none}
+  .importe-mob{display:block}
+  .tipo-full{display:none}
+  .tipo-short{display:inline-block}
   th,td{padding:8px 8px;font-size:13px}
 }
 @media(max-width:480px){
