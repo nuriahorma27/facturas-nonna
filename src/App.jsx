@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
@@ -1561,14 +1562,18 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
 
     </div>
 
-    {mobEdit&&(
+    {mobEdit&&createPortal(
       <div className="mob-edit" onClick={e=>{if(e.target===e.currentTarget)setMobEdit(null);}}>
         <div className="mob-edit-sheet">
           <div className="mob-edit-title">Editar factura</div>
-          {[["Fecha","fecha"],["Nº Factura","numero_factura"],["Proveedor / Cliente","proveedor_cliente"],["Base imponible","base_imponible"],["IVA %","iva_porcentaje"],["IVA importe","iva_importe"],["Total","total"]].map(([lbl,fld])=>(
+          {[["Fecha factura","fecha","text"],["Fecha real de pago","fecha_real","date"],["Nº Factura","numero_factura","text"],["Proveedor / Cliente","proveedor_cliente","text"],["Base imponible","base_imponible","number"],["IVA %","iva_porcentaje","number"],["IVA importe","iva_importe","number"],["Total","total","number"]].map(([lbl,fld,tp])=>(
             <div key={fld} className="mob-edit-row">
               <div className="mob-edit-lbl">{lbl}</div>
-              <input className="mob-edit-inp" defaultValue={mobEdit[fld]||""} onChange={e=>setMobEdit(p=>({...p,[fld]:e.target.value}))}/>
+              <input className="mob-edit-inp" type={tp} defaultValue={fld==="fecha_real"&&mobEdit[fld]?(()=>{const[d,m,y]=(mobEdit[fld]||"").split("/");return y?`${y}-${m}-${d}`:mobEdit[fld];})():mobEdit[fld]||""} onChange={e=>{
+                let val=e.target.value;
+                if(fld==="fecha_real"&&val){const[y,m,d]=val.split("-");val=d?`${d}/${m}/${y}`:val;}
+                setMobEdit(p=>({...p,[fld]:val}));
+              }}/>
             </div>
           ))}
           <div className="mob-edit-row">
@@ -1588,7 +1593,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
             <button className="btn-ink" onClick={async()=>{
               try{
                 const supa=await db();
-                const{error}=await supa.from("facturas").update({tipo:mobEdit.tipo,fecha:mobEdit.fecha,numero_factura:mobEdit.numero_factura,proveedor_cliente:mobEdit.proveedor_cliente,base_imponible:Number(mobEdit.base_imponible),iva_porcentaje:Number(mobEdit.iva_porcentaje),iva_importe:Number(mobEdit.iva_importe),total:Number(mobEdit.total),categoria:mobEdit.categoria,estado:mobEdit.estado}).eq("id",mobEdit.id);
+                const{error}=await supa.from("facturas").update({tipo:mobEdit.tipo,fecha:mobEdit.fecha,fecha_real:mobEdit.fecha_real||null,numero_factura:mobEdit.numero_factura,proveedor_cliente:mobEdit.proveedor_cliente,base_imponible:Number(mobEdit.base_imponible),iva_porcentaje:Number(mobEdit.iva_porcentaje),iva_importe:Number(mobEdit.iva_importe),total:Number(mobEdit.total),categoria:mobEdit.categoria,estado:mobEdit.estado}).eq("id",mobEdit.id);
                 if(error)throw error;
                 toast("Guardado ✓");setMobEdit(null);onRefresh();
               }catch(e){toast("Error: "+e.message,"err");}
@@ -1597,7 +1602,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
           </div>
         </div>
       </div>
-    )}
+    , document.body)}
     </>
   );
 }
