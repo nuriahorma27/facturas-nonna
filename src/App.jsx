@@ -401,10 +401,11 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .pill{padding:6px 12px;font-size:13px}
   .view-title{font-size:28px}
   .page-header{flex-direction:column;align-items:flex-start;gap:12px}
-  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .tab{padding:10px 14px;font-size:13px;white-space:nowrap;flex-shrink:0}
-  .period-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:6px;padding-bottom:4px}
-  .ptab{white-space:nowrap;flex-shrink:0;padding:9px 14px;font-size:13px}
+  .tabs{display:grid;grid-template-columns:1fr 1fr;flex-wrap:unset;overflow:visible}
+  .tab{padding:12px 8px;font-size:13px;text-align:center;border-right:none;border-bottom:.5px solid #D4C5A9}
+  .tab:nth-child(odd){border-right:.5px solid #D4C5A9}
+  .period-tabs{display:grid;grid-template-columns:1fr 1fr;flex-wrap:unset;gap:6px}
+  .ptab{padding:10px 8px;font-size:13px;text-align:center}
   .exp-bar{flex-direction:column;align-items:flex-start}
   .sum-grid{grid-template-columns:1fr 1fr}
   .ch-subtabs{flex-wrap:wrap}
@@ -419,11 +420,11 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .view{padding:16px 12px}
   .kpi-grid{grid-template-columns:1fr}
   .iva-grid{grid-template-columns:1fr 1fr}
-  .tabs{flex-wrap:nowrap;overflow-x:auto}
-  .tab{white-space:nowrap;flex-shrink:0;font-size:13px;padding:10px 14px}
-  .period-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
-  .ptab{white-space:nowrap;flex-shrink:0;font-size:12px;padding:8px 12px}
-  .ch-subtabs{flex-wrap:nowrap;overflow-x:auto}
+  .tabs{display:grid;grid-template-columns:1fr 1fr}
+  .tab{padding:12px 8px;font-size:13px;text-align:center}
+  .period-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .ptab{padding:10px 8px;font-size:13px;text-align:center}
+  .ch-subtabs{display:grid;grid-template-columns:1fr 1fr}
   table{width:100%}
   .twrap{-webkit-overflow-scrolling:touch}
   .btn-ink{padding:10px 16px;font-size:13px;letter-spacing:.14em}
