@@ -354,12 +354,20 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mf-val{font-size:16px;color:#2C2417}
 .modal-ft{padding:14px 26px;border-top:.5px solid #D4C5A9;display:flex;gap:9px;justify-content:flex-end;background:#EDE5D0}
 .tipo-full{display:flex;gap:5px;flex-wrap:wrap}
-.tipo-short{display:none;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700}
 .estado-dot{display:none;width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .acts-mob{display:none;position:relative}
 .mob-nav{display:none}
-.importe-mob{display:none;font-size:11px;color:#9C8E7A;margin-top:2px}
-.prov-cell{max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mob-cards{display:none}
+.mc{background:#F5F0E8;border:.5px solid #D4C5A9;padding:13px 14px;margin-bottom:8px;position:relative}
+.mc-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.mc-tipo{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0}
+.mc-fecha{font-size:13px;color:#5C4A2A;flex:1}
+.mc-fr{font-size:12px;color:#9C8E7A}
+.mc-name{font-size:15px;font-weight:500;color:#2C2417;margin-bottom:5px;line-height:1.3}
+.mc-foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:6px}
+.mc-total{font-size:20px;font-family:'Cormorant Garamond',serif;font-weight:600}
+.mc-detail{font-size:11px;color:#9C8E7A;margin-top:2px}
+.mc-acts{display:flex;gap:6px;align-items:center}
 .acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
 .acts-drop button:last-child{border-bottom:none}
@@ -405,17 +413,8 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .btn-ink span{display:none}
   .btn-ink svg{margin:0}
   .col-hide-mobile{display:none}
-  .chk-col{display:none}
-  .tipo-full{display:none}
-  .tipo-short{display:flex}
-  .estado-full{display:none}
-  .estado-dot{display:inline-block}
-  .acts-desk{display:none}
-  .acts-mob{display:block}
-  .importe-mob{display:block}
-  .twrap{overflow-x:hidden}
-  .prov-cell{max-width:90px}
-  th,td{padding:6px 5px;font-size:12px}
+  .twrap{display:none}
+  .mob-cards{display:block}
   .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:58px;background:#2C2417;border-top:.5px solid rgba(255,255,255,.12);z-index:200}
   .mob-nav-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9C8E7A;cursor:pointer;font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;border:none;background:none;padding:0}
   .mob-nav-it.active{color:#B8962E}
@@ -1458,6 +1457,52 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
             })}
           </tbody>
         </table>
+        <div className="tfoot">
+          <span className="tfoot-count">{filtered.length} factura{filtered.length!==1?"s":""}</span>
+          <div className="tfoot-tots">
+            <div className="tfoot-it"><span className="tfoot-lbl">Gastos</span><span className="tfoot-val" style={{color:"#8B3A2A"}}>{fmt(tG)}</span></div>
+            <div className="tfoot-it"><span className="tfoot-lbl">Ingresos</span><span className="tfoot-val" style={{color:"#3A6B3E"}}>{fmt(tI)}</span></div>
+            <div className="tfoot-it"><span className="tfoot-lbl">Balance</span><span className="tfoot-val" style={{color:tI-tG>=0?"#3A6B3E":"#8B3A2A"}}>{fmt(tI-tG)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tarjetas móvil ── */}
+      <div className="mob-cards">
+        {loading&&<div className="loading-row"><div className="spin"/><span>Cargando...</span></div>}
+        {!loading&&filtered.length===0&&<div className="empty-row">{facturas.length===0?"Aún no hay facturas":"Sin resultados"}</div>}
+        {!loading&&filtered.map(f=>{
+          const fr=f.fecha_real?(()=>{const[y,m,d]=(f.fecha_real||"").split("-");return d?`${d}/${m}/${y}`:f.fecha_real;})():null;
+          return(
+            <div key={f.id} className="mc">
+              <div className="mc-head">
+                <span className="mc-tipo" style={{background:f.tipo==="gasto"?"rgba(139,58,42,.12)":"rgba(58,107,62,.12)",color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>{f.tipo==="gasto"?"G":"I"}</span>
+                <span className="mc-fecha">{f.fecha}</span>
+                {fr&&<span className="mc-fr">→ {fr}</span>}
+                {!fr&&<span className="mc-fr" style={{cursor:"pointer"}} onClick={()=>setEditingFechaReal(f.id)}>
+                  {editingFechaReal===f.id
+                    ? <input type="date" className="ii" defaultValue="" autoFocus style={{width:120,fontSize:12}} onBlur={e=>saveFechaReal(f,e.target.value)} onChange={e=>e.target.value&&saveFechaReal(f,e.target.value)}/>
+                    : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{opacity:.4,verticalAlign:"middle"}}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  }
+                </span>}
+                <span style={{width:10,height:10,borderRadius:"50%",display:"inline-block",background:f.estado==="pagada"?"#3A6B3E":"#B8962E",flexShrink:0}}/>
+              </div>
+              <div className="mc-name">{f.proveedor_cliente||<span style={{color:"#9C8E7A",fontStyle:"italic"}}>Sin proveedor</span>}</div>
+              <div className="mc-foot">
+                <div>
+                  <div className="mc-total" style={{color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>{fmt(f.total)}</div>
+                  {(calcBase(f)||calcIva(f))>0&&<div className="mc-detail">Base {fmt(calcBase(f))} · IVA {fmt(calcIva(f))}</div>}
+                  {f.categoria&&<div className="mc-detail" style={{marginTop:1}}>{f.categoria}</div>}
+                </div>
+                <div className="mc-acts">
+                  <button className="ib eye" onClick={()=>{const u=f.drive_url||f.archivo_url;if(u)window.open(u,"_blank");else setVisor(f);}}>{I.eye}</button>
+                  <button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button>
+                  <button className="ib del" onClick={()=>deleteF(f)}>{I.del}</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
         <div className="tfoot">
           <span className="tfoot-count">{filtered.length} factura{filtered.length!==1?"s":""}</span>
           <div className="tfoot-tots">
