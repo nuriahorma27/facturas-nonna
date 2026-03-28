@@ -370,6 +370,13 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mc-acts{display:flex;gap:6px;align-items:center}
 .mc-acts .ib{border-color:#D4C5A9;color:#5C4A2A;width:34px;height:34px}
 .mc-acts .ib svg{width:16px;height:16px}
+.mob-edit{position:fixed;inset:0;background:rgba(44,36,23,.6);z-index:300;display:flex;align-items:flex-end}
+.mob-edit-sheet{background:#F5F0E8;width:100%;padding:24px 18px 32px;max-height:90vh;overflow-y:auto}
+.mob-edit-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:#2C2417;margin-bottom:18px;font-weight:600}
+.mob-edit-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.mob-edit-lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9C8E7A}
+.mob-edit-inp{border:none;border-bottom:.5px solid #D4C5A9;background:transparent;font-family:'Cormorant Garamond',serif;font-size:16px;color:#2C2417;padding:6px 0;outline:none;width:100%}
+.mob-edit-foot{display:flex;gap:10px;margin-top:20px}
 .acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
 .acts-drop button:last-child{border-bottom:none}
@@ -944,6 +951,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const [editData, setEditData]  = useState({});
   const [editingFechaReal, setEditingFechaReal] = useState(null);
   const [actionsOpen, setActionsOpen] = useState(null);
+  const [mobEdit, setMobEdit] = useState(null);
   const [sortField,setSortField] = useState("creado_en");
   const [sortDir,  setSortDir]   = useState("desc");
   const [visor,    setVisor]     = useState(null);
@@ -1497,8 +1505,8 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                   {f.categoria&&<div className="mc-detail" style={{marginTop:1}}>{f.categoria}</div>}
                 </div>
                 <div className="mc-acts">
-                  <button className="ib eye" onClick={()=>{const u=f.drive_url||f.archivo_url;if(u)window.open(u,"_blank");else setVisor(f);}}>{I.eye}</button>
-                  <button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button>
+                  <button className="ib eye" onClick={()=>setVisor(f)}>{I.eye}</button>
+                  <button className="ib" onClick={()=>setMobEdit(f)}>{I.edit}</button>
                   <button className="ib del" onClick={()=>deleteF(f)}>{I.del}</button>
                 </div>
               </div>
@@ -1549,6 +1557,44 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
           </div>
         </div>
       )}
+
+      {mobEdit&&(
+        <div className="mob-edit" onClick={e=>{if(e.target===e.currentTarget)setMobEdit(null);}}>
+          <div className="mob-edit-sheet">
+            <div className="mob-edit-title">Editar factura</div>
+            {[["Fecha","fecha"],["Nº Factura","numero_factura"],["Proveedor / Cliente","proveedor_cliente"],["Base imponible","base_imponible"],["IVA %","iva_porcentaje"],["IVA importe","iva_importe"],["Total","total"]].map(([lbl,fld])=>(
+              <div key={fld} className="mob-edit-row">
+                <div className="mob-edit-lbl">{lbl}</div>
+                <input className="mob-edit-inp" defaultValue={mobEdit[fld]||""} onChange={e=>setMobEdit(p=>({...p,[fld]:e.target.value}))}/>
+              </div>
+            ))}
+            <div className="mob-edit-row">
+              <div className="mob-edit-lbl">Categoría</div>
+              <select className="mob-edit-inp" value={mobEdit.categoria||""} onChange={e=>setMobEdit(p=>({...p,categoria:e.target.value}))}>
+                {CATS.map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="mob-edit-row">
+              <div className="mob-edit-lbl">Estado</div>
+              <select className="mob-edit-inp" value={mobEdit.estado||"pendiente"} onChange={e=>setMobEdit(p=>({...p,estado:e.target.value}))}>
+                <option value="pagada">Pagada</option>
+                <option value="pendiente">Pendiente</option>
+              </select>
+            </div>
+            <div className="mob-edit-foot">
+              <button className="btn-ink" onClick={async()=>{
+                try{
+                  const supa=await db();
+                  const{error}=await supa.from("facturas").update({tipo:mobEdit.tipo,fecha:mobEdit.fecha,numero_factura:mobEdit.numero_factura,proveedor_cliente:mobEdit.proveedor_cliente,base_imponible:Number(mobEdit.base_imponible),iva_porcentaje:Number(mobEdit.iva_porcentaje),iva_importe:Number(mobEdit.iva_importe),total:Number(mobEdit.total),categoria:mobEdit.categoria,estado:mobEdit.estado}).eq("id",mobEdit.id);
+                  if(error)throw error;
+                  toast("Guardado ✓");setMobEdit(null);onRefresh();
+                }catch(e){toast("Error: "+e.message,"err");}
+              }}>Guardar</button>
+              <button className="btn-sm" onClick={()=>setMobEdit(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1566,17 +1612,37 @@ function ViewDashboard({ facturas, historico }) {
 
   const _hoy2 = new Date();
   const _anyoAct = _hoy2.getFullYear().toString();
+  const _mesAct2 = _hoy2.getMonth()+1;
+  const _trimAct2 = _mesAct2<=3?"T1":_mesAct2<=6?"T2":_mesAct2<=9?"T3":"T4";
+  const [filtroAnyo, setFiltroAnyo] = useState(_anyoAct);
+  const [filtroTrim, setFiltroTrim] = useState(_trimAct2);
+
   const todosLosDatos = [...facturas.filter(f=>!f.eliminado_en), ...(historico||[])];
+  const anyosDisponibles = useMemo(()=>{
+    const set = new Set([_anyoAct]);
+    todosLosDatos.forEach(f=>{ const a=(f.fecha||"").split("/")[2]; if(a) set.add(a); });
+    return [...set].sort((a,b)=>b-a);
+  },[todosLosDatos]);
+
+  const filterPeriod = (arr, anyo, trim) => arr.filter(f=>{
+    const mes=parseInt((f.fecha||"").split("/")[1])||0;
+    const a=(f.fecha||"").split("/")[2]||"";
+    if(anyo && a!==anyo) return false;
+    if(trim && !TRIM[trim].map(i=>i+1).includes(mes)) return false;
+    return true;
+  });
+
   const useMock = todosLosDatos.length===0;
-  const gas=(useMock?MOCK:todosLosDatos).filter(f=>f.tipo==="gasto");
-  const ing=(useMock?MOCK:todosLosDatos).filter(f=>f.tipo==="ingreso");
+  const base = useMock ? MOCK : filterPeriod(todosLosDatos, filtroAnyo, filtroTrim);
+  const gas = base.filter(f=>f.tipo==="gasto");
+  const ing = base.filter(f=>f.tipo==="ingreso");
   const tG=gas.reduce((s,f)=>s+Number(f.total),0);
   const tI=ing.reduce((s,f)=>s+Number(f.total),0);
   const bal=tI-tG;
   const ivaR=ing.reduce((s,f)=>s+calcIva(f),0);
   const ivaS=gas.reduce((s,f)=>s+calcIva(f),0);
   const ivaN=ivaR-ivaS;
-  const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente");
+  const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente"&&!f.eliminado_en);
 
   const chartData = useMemo(()=>{
     const meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -1616,37 +1682,25 @@ function ViewDashboard({ facturas, historico }) {
   const topProv = useMemo(()=>Object.entries(gas.reduce((acc,f)=>{acc[f.proveedor_cliente]=(acc[f.proveedor_cliente]||0)+Number(f.total);return acc;},{})).map(([n,t])=>({n,t})).sort((a,b)=>b.t-a.t).slice(0,5),[gas]);
   const maxProv = topProv[0]?.t||1;
 
-  // IVA trimestral dinámico desde datos reales
+  // IVA trimestral dinámico — siempre muestra los 4 trimestres del año seleccionado
   const ivaData = useMemo(()=>{
-    const anyoActual = new Date().getFullYear().toString();
-    const datosTrimestre = (t) => {
-      const meses = TRIM[t].map(i=>i+1); // meses 1-12
-      const gastosTrim = gas.filter(f=>{
-        const m = parseInt((f.fecha||"").split("/")[1]);
-        const a = (f.fecha||"").split("/")[2];
-        return meses.includes(m) && (!a || a===anyoActual || useMock);
-      });
-      const ingresosTrim = ing.filter(f=>{
-        const m = parseInt((f.fecha||"").split("/")[1]);
-        const a = (f.fecha||"").split("/")[2];
-        return meses.includes(m) && (!a || a===anyoActual || useMock);
-      });
-      const ivaS = gastosTrim.reduce((s,f)=>s+calcIva(f),0);
-      const ivaR = ingresosTrim.reduce((s,f)=>s+calcIva(f),0);
-      return {t, ivaS, ivaR, net: ivaR-ivaS};
-    };
-    return ["T1","T2","T3","T4"].map(t=>datosTrimestre(t));
-  },[gas,ing,useMock]);
+    const allYear = filterPeriod(useMock?MOCK:todosLosDatos, filtroAnyo, "");
+    return ["T1","T2","T3","T4"].map(t=>{
+      const meses = TRIM[t].map(i=>i+1);
+      const gT = allYear.filter(f=>f.tipo==="gasto"&&meses.includes(parseInt((f.fecha||"").split("/")[1])));
+      const iT = allYear.filter(f=>f.tipo==="ingreso"&&meses.includes(parseInt((f.fecha||"").split("/")[1])));
+      return {t, ivaS:gT.reduce((s,f)=>s+calcIva(f),0), ivaR:iT.reduce((s,f)=>s+calcIva(f),0), net:iT.reduce((s,f)=>s+calcIva(f),0)-gT.reduce((s,f)=>s+calcIva(f),0)};
+    });
+  },[todosLosDatos, filtroAnyo, useMock]);
 
   const barSerie = vista==="gastos"?"gastos":vista==="ingresos"?"ingresos":cSub;
   const barCol   = {gastos:"#C25A4A",ingresos:"#5A8A5E",gastos24:"rgba(194,90,74,.35)",ingresos24:"rgba(90,138,94,.35)"};
 
-  // Calcular totales año anterior desde histórico
-  const anyoAnt = String(new Date().getFullYear()-1);
-  const datosAntI = (historico||[]).filter(f=>f._anyo===anyoAnt&&f.tipo==="ingreso");
-  const datosAntG = (historico||[]).filter(f=>f._anyo===anyoAnt&&f.tipo==="gasto");
-  const tIant = datosAntI.reduce((s,f)=>s+Number(f.total),0);
-  const tGant = datosAntG.reduce((s,f)=>s+Number(f.total),0);
+  // Calcular totales período anterior (mismo trimestre, año anterior)
+  const anyoAnt = String(Number(filtroAnyo)-1);
+  const baseAnt = filterPeriod([...facturas.filter(f=>!f.eliminado_en),...(historico||[])], anyoAnt, filtroTrim);
+  const tIant = baseAnt.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0);
+  const tGant = baseAnt.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0);
   const deltaI = tIant>0?((tI-tIant)/tIant*100).toFixed(1):null;
   const deltaG = tGant>0?((tG-tGant)/tGant*100).toFixed(1):null;
 
@@ -1677,6 +1731,25 @@ function ViewDashboard({ facturas, historico }) {
     <div className="view">
       <div className="eyebrow">Módulo 4</div>
       <h1 className="view-title" style={{marginBottom:20}}>Dashboard <em>financiero</em></h1>
+
+      <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:18,alignItems:"center"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          <label style={{fontSize:10,letterSpacing:".18em",textTransform:"uppercase",color:"#9C8E7A"}}>Año</label>
+          <select className="fs" value={filtroAnyo} onChange={e=>setFiltroAnyo(e.target.value)} style={{minWidth:80}}>
+            {anyosDisponibles.map(a=><option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          <label style={{fontSize:10,letterSpacing:".18em",textTransform:"uppercase",color:"#9C8E7A"}}>Trimestre</label>
+          <select className="fs" value={filtroTrim} onChange={e=>setFiltroTrim(e.target.value)} style={{minWidth:110}}>
+            <option value="">Todo el año</option>
+            <option value="T1">T1 (Ene–Mar)</option>
+            <option value="T2">T2 (Abr–Jun)</option>
+            <option value="T3">T3 (Jul–Sep)</option>
+            <option value="T4">T4 (Oct–Dic)</option>
+          </select>
+        </div>
+      </div>
 
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:14,marginBottom:26}}>
         <div className="tabs">
