@@ -913,6 +913,7 @@ function ViewSubida({ onSaved, toast }) {
 function ViewListado({ facturas, historico, setHistorico, guardarHistorico, cargandoHist, loading, onRefresh, toast }) {
   const [editingId,setEditingId] = useState(null);
   const [editData, setEditData]  = useState({});
+  const [editingFechaReal, setEditingFechaReal] = useState(null);
   const [sortField,setSortField] = useState("creado_en");
   const [sortDir,  setSortDir]   = useState("desc");
   const [visor,    setVisor]     = useState(null);
@@ -1144,6 +1145,17 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
     }catch(e){toast("Error: "+e.message,"err");}
   };
 
+  const saveFechaReal=async(factura, isoDate)=>{
+    setEditingFechaReal(null);
+    if(String(factura.id).startsWith("hist_")) return;
+    try{
+      const supa=await db();
+      const{error}=await supa.from("facturas").update({fecha_real:isoDate||null}).eq("id",factura.id);
+      if(error)throw error;
+      toast("Fecha real guardada ✓");onRefresh();
+    }catch(e){toast("Error: "+e.message,"err");}
+  };
+
   const deleteF=async(factura)=>{
     const id = typeof factura === "object" ? factura.id : factura;
     // Si es histórico, borrarlo del array de históricos
@@ -1334,16 +1346,19 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
             <th style={{width:36}}><input type="checkbox" onChange={selectAll} checked={selected.size===filtered.length&&filtered.length>0} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></th>
             <th>Tipo</th>
             <th className={`sort${sortField==="fecha"?" sorted":""}`} onClick={()=>toggleSort("fecha")}>Fecha<Arr f="fecha"/></th>
+            <th className="col-hide-mobile" style={{fontSize:12,color:"#9C8E7A"}}>Fecha real</th>
             <th className="col-hide-mobile">Nº Factura</th>
             <th>Proveedor / Cliente</th>
-            <th className={`sort${sortField==="total"?" sorted":""}`} onClick={()=>toggleSort("total")}>Importe<Arr f="total"/></th>
+            <th className="col-hide-mobile" style={{textAlign:"right"}}>Base imp.</th>
+            <th className="col-hide-mobile" style={{textAlign:"right"}}>IVA</th>
+            <th className={`sort${sortField==="total"?" sorted":""}`} onClick={()=>toggleSort("total")} style={{textAlign:"right"}}>Total<Arr f="total"/></th>
             <th className="col-hide-mobile">Categoría</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr></thead>
           <tbody>
-            {loading&&<tr><td colSpan={10}><div className="loading-row"><div className="spin"/><span>Cargando desde Supabase...</span></div></td></tr>}
-            {!loading&&filtered.length===0&&<tr><td colSpan={10} className="empty-row">{facturas.length===0?"Aún no hay facturas — sube la primera en el módulo 2":"Sin resultados con estos filtros"}</td></tr>}
+            {loading&&<tr><td colSpan={13}><div className="loading-row"><div className="spin"/><span>Cargando desde Supabase...</span></div></td></tr>}
+            {!loading&&filtered.length===0&&<tr><td colSpan={13} className="empty-row">{facturas.length===0?"Aún no hay facturas — sube la primera en el módulo 2":"Sin resultados con estos filtros"}</td></tr>}
             {!loading&&filtered.map((f,i)=>{
               const isE=editingId===f.id,d=isE?editData:f;
               return(
@@ -1357,12 +1372,22 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     </div>}
                   </td>
                   <td>{isE?<input className="ii" value={d.fecha||""} onChange={e=>setEditData(p=>({...p,fecha:e.target.value}))} style={{width:95}}/>:f.fecha}</td>
+                  <td className="col-hide-mobile" style={{color:"#9C8E7A",fontSize:12,whiteSpace:"nowrap"}}>
+                    {editingFechaReal===f.id
+                      ? <input type="date" className="ii" defaultValue={f.fecha_real||""} autoFocus style={{width:120}} onBlur={e=>saveFechaReal(f,e.target.value)} onChange={e=>e.target.value&&saveFechaReal(f,e.target.value)}/>
+                      : <span style={{cursor:"pointer",display:"flex",alignItems:"center",gap:4}} onClick={()=>setEditingFechaReal(f.id)}>
+                          {f.fecha_real||<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{opacity:.4}}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>}
+                        </span>
+                    }
+                  </td>
                   <td className="col-hide-mobile" style={{color:"#9C8E7A",fontSize:13}}>{isE?<input className="ii" value={d.numero_factura||""} onChange={e=>setEditData(p=>({...p,numero_factura:e.target.value}))}/>:f.numero_factura}</td>
                   <td style={{fontWeight:500}}>{isE?<input className="ii" value={d.proveedor_cliente||""} onChange={e=>setEditData(p=>({...p,proveedor_cliente:e.target.value}))}/>:f.proveedor_cliente}</td>
-                  <td style={{fontWeight:500,color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>
+                  <td className="col-hide-mobile" style={{textAlign:"right",color:"#5C4A2A",fontSize:13}}>{isE?"":fmt(calcBase(f))}</td>
+                  <td className="col-hide-mobile" style={{textAlign:"right",color:"#5C4A2A",fontSize:13}}>{isE?"":fmt(calcIva(f))}</td>
+                  <td style={{fontWeight:500,color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E",textAlign:"right"}}>
                     {isE
                       ? <input className="ii" type="number" value={d.total||0} onChange={e=>setEditData(p=>({...p,total:e.target.value}))} style={{width:85}}/>
-                      : <><div>{fmt(f.total)}</div>{(Number(f.base_imponible)||Number(f.iva_importe))>0&&<div className="importe-detail">Base {fmt(calcBase(f))} · IVA {fmt(calcIva(f))}</div>}</>
+                      : fmt(f.total)
                     }
                   </td>
                   <td className="col-hide-mobile" style={{fontSize:12,color:"#5C4A2A"}}>{isE?<select className="is" value={d.categoria||""} onChange={e=>setEditData(p=>({...p,categoria:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select>:f.categoria}</td>
