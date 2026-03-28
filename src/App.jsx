@@ -392,7 +392,23 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .btn-ink span{display:none}
   .btn-ink svg{margin:0}
   .col-hide-mobile{display:none}
+  .chk-col{display:none}
+  .tipo-full{display:none}
+  .tipo-short{display:flex}
+  .estado-full{display:none}
+  .estado-dot{display:inline-block}
+  .acts-desk{display:none}
+  .acts-mob{display:block}
 }
+.tipo-short{display:none;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700}
+.estado-dot{display:none;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.acts-mob{display:none;position:relative}
+.acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
+.acts-drop button:last-child{border-bottom:none}
+.acts-drop button:hover{background:#EDE5D0}
+.acts-drop button svg{width:14px;height:14px;flex-shrink:0}
+.acts-drop .del-opt{color:#8B3A2A}
 .mob-nav{display:none}
 @media(max-width:480px){
   .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:58px;background:#2C2417;border-top:.5px solid rgba(255,255,255,.12);z-index:200}
@@ -921,6 +937,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
   const [editingId,setEditingId] = useState(null);
   const [editData, setEditData]  = useState({});
   const [editingFechaReal, setEditingFechaReal] = useState(null);
+  const [actionsOpen, setActionsOpen] = useState(null);
   const [sortField,setSortField] = useState("creado_en");
   const [sortDir,  setSortDir]   = useState("desc");
   const [visor,    setVisor]     = useState(null);
@@ -1350,7 +1367,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
       <div className="twrap">
         <table>
           <thead><tr>
-            <th style={{width:36}}><input type="checkbox" onChange={selectAll} checked={selected.size===filtered.length&&filtered.length>0} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></th>
+            <th className="chk-col" style={{width:36}}><input type="checkbox" onChange={selectAll} checked={selected.size===filtered.length&&filtered.length>0} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></th>
             <th>Tipo</th>
             <th className={`sort${sortField==="fecha"?" sorted":""}`} onClick={()=>toggleSort("fecha")}>Fecha<Arr f="fecha"/></th>
             <th style={{fontSize:12,color:"#9C8E7A"}}>Fecha real</th>
@@ -1370,13 +1387,16 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
               const isE=editingId===f.id,d=isE?editData:f;
               return(
                 <tr key={f.id} className={"dr"+(isE?" editing":"")} style={{animationDelay:i*.025+"s",background:selected.has(f.id)?"rgba(184,150,46,.08)":""}}>
-                  <td style={{textAlign:"center"}}><input type="checkbox" checked={selected.has(f.id)} onChange={()=>toggleSelect(f.id)} onClick={e=>e.stopPropagation()} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></td>
+                  <td className="chk-col" style={{textAlign:"center"}}><input type="checkbox" checked={selected.has(f.id)} onChange={()=>toggleSelect(f.id)} onClick={e=>e.stopPropagation()} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></td>
                   <td>
                     {isE?<select className="is" value={d.tipo} onChange={e=>setEditData(p=>({...p,tipo:e.target.value}))}><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select>
-                    :<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                      <span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span>
-                      {f.es_duplicada&&<span className="badge" style={{background:"rgba(180,30,20,.1)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.4)"}}>⚠ Dup.</span>}
-                    </div>}
+                    :<>
+                      <div className="tipo-full" style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                        <span className={"badge badge-"+f.tipo}>{f.tipo==="gasto"?"Gasto":"Ingreso"}</span>
+                        {f.es_duplicada&&<span className="badge" style={{background:"rgba(180,30,20,.1)",color:"#8B1A0A",border:".5px solid rgba(180,30,20,.4)"}}>⚠ Dup.</span>}
+                      </div>
+                      <span className="tipo-short" style={{background:f.tipo==="gasto"?"rgba(139,58,42,.12)":"rgba(58,107,62,.12)",color:f.tipo==="gasto"?"#8B3A2A":"#3A6B3E"}}>{f.tipo==="gasto"?"G":"I"}</span>
+                    </>}
                   </td>
                   <td>{isE?<input className="ii" value={d.fecha||""} onChange={e=>setEditData(p=>({...p,fecha:e.target.value}))} style={{width:95}}/>:f.fecha}</td>
                   <td style={{color:"#9C8E7A",fontSize:12,whiteSpace:"nowrap"}}>
@@ -1398,11 +1418,36 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     }
                   </td>
                   <td className="col-hide-mobile" style={{fontSize:12,color:"#5C4A2A"}}>{isE?<select className="is" value={d.categoria||""} onChange={e=>setEditData(p=>({...p,categoria:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select>:f.categoria}</td>
-                  <td>{isE?<select className="is" value={d.estado||"pendiente"} onChange={e=>setEditData(p=>({...p,estado:e.target.value}))}><option value="pagada">Pagada</option><option value="pendiente">Pendiente</option></select>:<span className={"badge badge-"+f.estado}><span className={"e-dot dot-"+f.estado}/>{f.estado}</span>}</td>
-                  <td><div className="acts">
-                    {isE?<><button className="ib sv" onClick={saveEdit}>{I.ok}</button><button className="ib" onClick={cancelEdit}>{I.x}</button></>
-                    :<><button className="ib eye" title={f.drive_url||f.archivo_url?"Abrir en Drive":"Ver detalles"} onClick={()=>{const u=f.drive_url||f.archivo_url;if(u)window.open(u,"_blank");else setVisor(f);}}>{I.eye}</button><button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button><button className="ib del" onClick={()=>deleteF(f)}>{I.del}</button></>}
-                  </div></td>
+                  <td>
+                    {isE
+                      ? <select className="is" value={d.estado||"pendiente"} onChange={e=>setEditData(p=>({...p,estado:e.target.value}))}><option value="pagada">Pagada</option><option value="pendiente">Pendiente</option></select>
+                      : <>
+                          <span className="estado-full"><span className={"badge badge-"+f.estado}><span className={"e-dot dot-"+f.estado}/>{f.estado}</span></span>
+                          <span className="estado-dot" style={{background:f.estado==="pagada"?"#3A6B3E":f.estado==="pendiente"?"#B8962E":"#9C8E7A"}}/>
+                        </>
+                    }
+                  </td>
+                  <td style={{position:"relative"}}>
+                    <div className="acts acts-desk">
+                      {isE?<><button className="ib sv" onClick={saveEdit}>{I.ok}</button><button className="ib" onClick={cancelEdit}>{I.x}</button></>
+                      :<><button className="ib eye" title={f.drive_url||f.archivo_url?"Abrir en Drive":"Ver detalles"} onClick={()=>{const u=f.drive_url||f.archivo_url;if(u)window.open(u,"_blank");else setVisor(f);}}>{I.eye}</button><button className="ib" onClick={()=>startEdit(f)}>{I.edit}</button><button className="ib del" onClick={()=>deleteF(f)}>{I.del}</button></>}
+                    </div>
+                    <div className="acts-mob">
+                      {isE?<><button className="ib sv" onClick={saveEdit}>{I.ok}</button><button className="ib" onClick={cancelEdit}>{I.x}</button></>
+                      :<>
+                        <button className="ib" onClick={()=>setActionsOpen(actionsOpen===f.id?null:f.id)}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </button>
+                        {actionsOpen===f.id&&(
+                          <div className="acts-drop">
+                            <button onClick={()=>{const u=f.drive_url||f.archivo_url;if(u)window.open(u,"_blank");else setVisor(f);setActionsOpen(null);}}>{I.eye} Ver</button>
+                            <button onClick={()=>{startEdit(f);setActionsOpen(null);}}>{I.edit} Editar</button>
+                            <button className="del-opt" onClick={()=>{deleteF(f);setActionsOpen(null);}}>{I.del} Eliminar</button>
+                          </div>
+                        )}
+                      </>}
+                    </div>
+                  </td>
                 </tr>
               );
             })}
