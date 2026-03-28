@@ -370,7 +370,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .mc-acts{display:flex;gap:6px;align-items:center}
 .mc-acts .ib{border-color:#D4C5A9;color:#5C4A2A;width:34px;height:34px}
 .mc-acts .ib svg{width:16px;height:16px}
-.mob-edit{position:fixed;inset:0;background:rgba(44,36,23,.6);z-index:300;display:flex;align-items:flex-end}
+.mob-edit{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,36,23,.6);z-index:300;display:flex;align-items:flex-end}
 .mob-edit-sheet{background:#F5F0E8;width:100%;padding:24px 18px 32px;max-height:90vh;overflow-y:auto}
 .mob-edit-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:#2C2417;margin-bottom:18px;font-weight:600}
 .mob-edit-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
@@ -1645,33 +1645,39 @@ function ViewDashboard({ facturas, historico }) {
   const pend=(facturas.length>0?facturas:MOCK).filter(f=>f.estado==="pendiente"&&!f.eliminado_en);
 
   const chartData = useMemo(()=>{
-    const meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-    const anoActual=new Date().getFullYear().toString();
-    const byMes=(arr,mes,tipo)=>arr.filter(f=>f.fecha&&parseInt(f.fecha.split("/")[1])===mes&&f.tipo===tipo).reduce((s,f)=>s+Number(f.total),0);
-    const byTrim=(arr,idxs,tipo)=>idxs.map(i=>i+1).reduce((s,m)=>s+byMes(arr,m,tipo),0);
-    const hist=historico||[];
-    if(periodo==="mensual"){
-      return meses.map((mes,i)=>({
-        mes,
-        gastos:byMes(facturas,i+1,"gasto"),
-        ingresos:byMes(facturas,i+1,"ingreso"),
-        gastos24:byMes(hist,i+1,"gasto")||MOCK_2024[i].g,
-        ingresos24:byMes(hist,i+1,"ingreso")||MOCK_2024[i].i,
+    const MESES_LBL=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    const allTodos = [...facturas.filter(f=>!f.eliminado_en),...(historico||[])];
+    const byMes=(arr,anyo,mes,tipo)=>arr.filter(f=>{
+      const p=(f.fecha||"").split("/");
+      return parseInt(p[1])===mes && p[2]===anyo && f.tipo===tipo;
+    }).reduce((s,f)=>s+Number(f.total),0);
+    const byTrim=(arr,anyo,idxs,tipo)=>idxs.map(i=>i+1).reduce((s,m)=>s+byMes(arr,anyo,m,tipo),0);
+    const anyoAnt2=String(Number(filtroAnyo)-1);
+
+    // Qué meses/trimestres mostrar
+    const mesIdxs = filtroTrim ? TRIM[filtroTrim] : [0,1,2,3,4,5,6,7,8,9,10,11];
+
+    if(periodo==="mensual"||(!filtroTrim&&periodo!=="anual")){
+      return mesIdxs.map(i=>({
+        mes:MESES_LBL[i],
+        gastos:byMes(allTodos,filtroAnyo,i+1,"gasto"),
+        ingresos:byMes(allTodos,filtroAnyo,i+1,"ingreso"),
+        gastos24:byMes(allTodos,anyoAnt2,i+1,"gasto")||MOCK_2024[i].g,
+        ingresos24:byMes(allTodos,anyoAnt2,i+1,"ingreso")||MOCK_2024[i].i,
       }));
     }
     if(periodo==="trimestral"){
-      return Object.entries(TRIM).map(([t,idxs])=>({
+      const trims = filtroTrim ? [[filtroTrim,TRIM[filtroTrim]]] : Object.entries(TRIM);
+      return trims.map(([t,idxs])=>({
         mes:t,
-        gastos:byTrim(facturas,idxs,"gasto"),
-        ingresos:byTrim(facturas,idxs,"ingreso"),
-        gastos24:byTrim(hist,idxs,"gasto")||idxs.reduce((s,i)=>s+MOCK_2024[i].g,0),
-        ingresos24:byTrim(hist,idxs,"ingreso")||idxs.reduce((s,i)=>s+MOCK_2024[i].i,0),
+        gastos:byTrim(allTodos,filtroAnyo,idxs,"gasto"),
+        ingresos:byTrim(allTodos,filtroAnyo,idxs,"ingreso"),
+        gastos24:byTrim(allTodos,anyoAnt2,idxs,"gasto")||idxs.reduce((s,i)=>s+MOCK_2024[i].g,0),
+        ingresos24:byTrim(allTodos,anyoAnt2,idxs,"ingreso")||idxs.reduce((s,i)=>s+MOCK_2024[i].i,0),
       }));
     }
-    const g24=hist.length>0?hist.filter(f=>f.tipo==="gasto").reduce((s,f)=>s+Number(f.total),0):MOCK_2024.reduce((s,m)=>s+m.g,0);
-    const i24=hist.length>0?hist.filter(f=>f.tipo==="ingreso").reduce((s,f)=>s+Number(f.total),0):MOCK_2024.reduce((s,m)=>s+m.i,0);
-    return [{mes:anoActual,gastos:tG,ingresos:tI},{mes:String(Number(anoActual)-1),gastos:g24,ingresos:i24}];
-  },[facturas,historico,periodo,tG,tI]);
+    return [{mes:filtroAnyo,gastos:tG,ingresos:tI},{mes:anyoAnt2,gastos:tGant,ingresos:tIant}];
+  },[facturas,historico,periodo,filtroAnyo,filtroTrim,tG,tI,tGant,tIant]);
 
   const catData = useMemo(()=>{
     const src = vista==="ingresos" ? ing : gas;
@@ -1778,7 +1784,7 @@ function ViewDashboard({ facturas, historico }) {
       <div className="charts-grid">
         <div className="ch-card full">
           <div className="ch-title">Evolución {periodo}</div>
-          <div className="ch-sub" style={{marginBottom:0}}>2025 vs 2024 — mismo período</div>
+          <div className="ch-sub" style={{marginBottom:0}}>{filtroAnyo}{filtroTrim?` · ${filtroTrim}`:""} vs {String(Number(filtroAnyo)-1)} — mismo período</div>
           {vista==="resumen"&&<div className="ch-subtabs"><button className={"ch-stab"+(cSub==="ingresos"?" active":"")} onClick={()=>setCSub("ingresos")}>Ingresos</button><button className={"ch-stab"+(cSub==="gastos"?" active":"")} onClick={()=>setCSub("gastos")}>Gastos</button></div>}
           {vista!=="resumen"&&<div style={{height:22}}/>}
           <ResponsiveContainer width="100%" height={250}>
@@ -1787,8 +1793,8 @@ function ViewDashboard({ facturas, historico }) {
               <XAxis dataKey="mes" tick={{fontFamily:"Cormorant Garamond",fontSize:13,fill:"#4A3820"}} axisLine={false} tickLine={false}/>
               <YAxis tickFormatter={fmtK} tick={{fontFamily:"Cormorant Garamond",fontSize:13,fill:"#4A3820"}} axisLine={false} tickLine={false}/>
               <Tooltip content={<CTT/>}/>
-              <Bar dataKey={barSerie} name={barSerie==="ingresos"?"Ingresos 2025":"Gastos 2025"} fill={barCol[barSerie]} radius={[2,2,0,0]}/>
-              {periodo!=="anual"&&<Bar dataKey={barSerie+"24"} name={barSerie==="ingresos"?"Ingresos 2024":"Gastos 2024"} fill={barCol[barSerie+"24"]} radius={[2,2,0,0]}/>}
+              <Bar dataKey={barSerie} name={(barSerie==="ingresos"?"Ingresos ":"Gastos ")+filtroAnyo} fill={barCol[barSerie]} radius={[2,2,0,0]}/>
+              {periodo!=="anual"&&<Bar dataKey={barSerie+"24"} name={(barSerie==="ingresos"?"Ingresos ":"Gastos ")+String(Number(filtroAnyo)-1)} fill={barCol[barSerie+"24"]} radius={[2,2,0,0]}/>}
             </BarChart>
           </ResponsiveContainer>
         </div>
