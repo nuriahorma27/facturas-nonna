@@ -1353,7 +1353,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
             <th style={{width:36}}><input type="checkbox" onChange={selectAll} checked={selected.size===filtered.length&&filtered.length>0} style={{cursor:"pointer",width:15,height:15,accentColor:"#B8962E"}}/></th>
             <th>Tipo</th>
             <th className={`sort${sortField==="fecha"?" sorted":""}`} onClick={()=>toggleSort("fecha")}>Fecha<Arr f="fecha"/></th>
-            <th className="col-hide-mobile" style={{fontSize:12,color:"#9C8E7A"}}>Fecha real</th>
+            <th style={{fontSize:12,color:"#9C8E7A"}}>Fecha real</th>
             <th className="col-hide-mobile">Nº Factura</th>
             <th>Proveedor / Cliente</th>
             <th className="col-hide-mobile" style={{textAlign:"right"}}>Base imp.</th>
@@ -1379,7 +1379,7 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
                     </div>}
                   </td>
                   <td>{isE?<input className="ii" value={d.fecha||""} onChange={e=>setEditData(p=>({...p,fecha:e.target.value}))} style={{width:95}}/>:f.fecha}</td>
-                  <td className="col-hide-mobile" style={{color:"#9C8E7A",fontSize:12,whiteSpace:"nowrap"}}>
+                  <td style={{color:"#9C8E7A",fontSize:12,whiteSpace:"nowrap"}}>
                     {editingFechaReal===f.id
                       ? <input type="date" className="ii" defaultValue={f.fecha_real||""} autoFocus style={{width:120}} onBlur={e=>saveFechaReal(f,e.target.value)} onChange={e=>e.target.value&&saveFechaReal(f,e.target.value)}/>
                       : <span style={{cursor:"pointer",display:"flex",alignItems:"center",gap:4}} onClick={()=>setEditingFechaReal(f.id)}>
