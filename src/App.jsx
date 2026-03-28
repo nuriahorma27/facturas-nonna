@@ -356,6 +356,7 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .tipo-short{display:none;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700}
 .estado-dot{display:none;width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .acts-mob{display:none;position:relative}
+.mob-nav{display:none}
 .acts-drop{position:absolute;right:0;top:calc(100% + 4px);background:#F5F0E8;border:.5px solid #D4C5A9;z-index:100;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .acts-drop button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;border-bottom:.5px solid #D4C5A9;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2C2417;cursor:pointer;text-align:left}
 .acts-drop button:last-child{border-bottom:none}
@@ -413,7 +414,6 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .mob-nav-it.active{color:#B8962E}
   .mob-nav-it svg{width:20px;height:20px}
 }
-.mob-nav{display:none}
 `;
 
 // ── Iconos ───────────────────────────────────────────────────
