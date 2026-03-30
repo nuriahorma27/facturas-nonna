@@ -1,0 +1,268 @@
+{
+  "name": "Facturas - Mover a Eliminadas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "facturas-drive-move",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "m1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "facturas-drive-move"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $input.first().json?.body ?? $input.first().json;\nconst trim = b.trimestre ?? 'T1';\nconst anyo = String(b.anyo ?? new Date().getFullYear());\nconst tipo = b.tipo ?? 'gasto';\nreturn [{\n  json: {\n    fileId: b.fileId,\n    trimFolder: `${trim} - ${anyo}`,\n    tipoFolder: tipo === 'ingreso' ? 'Ingresos' : 'Gastos',\n    rootId: '1_-4IPitaopGpH6XCfcvOIhcB6c9V1cM5'\n  }\n}];"
+      },
+      "id": "m2",
+      "name": "Parsear datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.fileId + '?fields=parents' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "id": "m3",
+      "name": "Obtener padre actual",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst data = $('Parsear datos').first().json;\nconst oldParentId = res.parents ? res.parents[0] : null;\nreturn [{ json: { ...data, oldParentId } }];"
+      },
+      "id": "m4",
+      "name": "Extraer padre actual",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ \"'\" + $json.rootId + \"' in parents and name = '\" + $json.trimFolder + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}"
+            },
+            { "name": "fields", "value": "files(id,name)" },
+            { "name": "pageSize", "value": "1" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "m5",
+      "name": "Buscar carpeta trimestre",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst data = $('Extraer padre actual').first().json;\nconst trimFolderId = (res.files && res.files.length > 0) ? res.files[0].id : null;\nif (!trimFolderId) throw new Error('Carpeta trimestre no encontrada: ' + data.trimFolder);\nreturn [{ json: { ...data, trimFolderId } }];"
+      },
+      "id": "m6",
+      "name": "Extraer ID trimestre",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ \"'\" + $json.trimFolderId + \"' in parents and name = '\" + $json.tipoFolder + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}"
+            },
+            { "name": "fields", "value": "files(id,name)" },
+            { "name": "pageSize", "value": "1" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "m7",
+      "name": "Buscar carpeta tipo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst data = $('Extraer ID trimestre').first().json;\nconst tipoFolderId = (res.files && res.files.length > 0) ? res.files[0].id : null;\nif (!tipoFolderId) throw new Error('Carpeta tipo no encontrada: ' + data.tipoFolder);\nreturn [{ json: { ...data, tipoFolderId } }];"
+      },
+      "id": "m8",
+      "name": "Extraer ID tipo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ \"'\" + $json.tipoFolderId + \"' in parents and name = 'Eliminadas' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}"
+            },
+            { "name": "fields", "value": "files(id,name)" },
+            { "name": "pageSize", "value": "1" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "m9",
+      "name": "Buscar carpeta Eliminadas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst data = $('Extraer ID tipo').first().json;\nconst eliminadasId = (res.files && res.files.length > 0) ? res.files[0].id : null;\nreturn [{ json: { ...data, eliminadasId } }];"
+      },
+      "id": "m10",
+      "name": "Extraer ID Eliminadas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-elim",
+              "leftValue": "={{ $json.eliminadasId }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "isEmpty" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "m11",
+      "name": "¿Crear Eliminadas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'Eliminadas', mimeType: 'application/vnd.google-apps.folder', parents: [$json.tipoFolderId] }) }}",
+        "options": {}
+      },
+      "id": "m12",
+      "name": "Crear Eliminadas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2660, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n// Si viene de crear: tiene .id del folder creado\n// Si viene del IF false: ya tiene eliminadasId\nconst eliminadasId = input.id ?? input.eliminadasId;\nconst data = $('Extraer ID Eliminadas').first().json;\nreturn [{ json: { ...data, eliminadasId } }];"
+      },
+      "id": "m13",
+      "name": "Normalizar ID Eliminadas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.fileId + '?addParents=' + $json.eliminadasId + '&removeParents=' + $json.oldParentId + '&fields=id,parents' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {}
+      },
+      "id": "m14",
+      "name": "Mover archivo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3100, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\":true}",
+        "options": {}
+      },
+      "id": "m15",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3320, 300]
+    }
+  ],
+  "connections": {
+    "Webhook":                  { "main": [[{ "node": "Parsear datos",          "type": "main", "index": 0 }]] },
+    "Parsear datos":            { "main": [[{ "node": "Obtener padre actual",   "type": "main", "index": 0 }]] },
+    "Obtener padre actual":     { "main": [[{ "node": "Extraer padre actual",   "type": "main", "index": 0 }]] },
+    "Extraer padre actual":     { "main": [[{ "node": "Buscar carpeta trimestre", "type": "main", "index": 0 }]] },
+    "Buscar carpeta trimestre": { "main": [[{ "node": "Extraer ID trimestre",   "type": "main", "index": 0 }]] },
+    "Extraer ID trimestre":     { "main": [[{ "node": "Buscar carpeta tipo",    "type": "main", "index": 0 }]] },
+    "Buscar carpeta tipo":      { "main": [[{ "node": "Extraer ID tipo",        "type": "main", "index": 0 }]] },
+    "Extraer ID tipo":          { "main": [[{ "node": "Buscar carpeta Eliminadas", "type": "main", "index": 0 }]] },
+    "Buscar carpeta Eliminadas":{ "main": [[{ "node": "Extraer ID Eliminadas",  "type": "main", "index": 0 }]] },
+    "Extraer ID Eliminadas":    { "main": [[{ "node": "¿Crear Eliminadas?",     "type": "main", "index": 0 }]] },
+    "¿Crear Eliminadas?": {
+      "main": [
+        [{ "node": "Crear Eliminadas",        "type": "main", "index": 0 }],
+        [{ "node": "Normalizar ID Eliminadas","type": "main", "index": 0 }]
+      ]
+    },
+    "Crear Eliminadas":         { "main": [[{ "node": "Normalizar ID Eliminadas", "type": "main", "index": 0 }]] },
+    "Normalizar ID Eliminadas": { "main": [[{ "node": "Mover archivo",          "type": "main", "index": 0 }]] },
+    "Mover archivo":            { "main": [[{ "node": "Responder",              "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": []
+}

@@ -18,14 +18,13 @@ const _sb = createClient(
 );
 async function db() { return _sb; }
 
-// ── Google Drive via Apps Script ─────────────────────────────
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAyC6kXu2o_5oRMfkHQHRPYaEP15p0qeMJcp2Uj9F6Zeu_x22qYUWEEFHHxbD2mgqOCA/exec";
+// ── Google Drive via n8n ──────────────────────────────────────
+const N8N_UPLOAD_URL = "https://nuriahorma.app.n8n.cloud/webhook/facturas-drive-upload";
+const N8N_MOVE_URL   = "https://nuriahorma.app.n8n.cloud/webhook/facturas-drive-move";
 
 async function subirADrive(file, trimestre, anyo, tipo) {
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT") return null;
   try {
     const isPdf = file.type === "application/pdf" || file.name.match(/\.pdf$/i);
-    // Comprimir imágenes antes de enviar para no superar el límite del serverless (~4MB)
     const fileToSend = isPdf ? file : await compressImage(file, 2000, 0.88);
     const mimeOut   = isPdf ? "application/pdf" : "image/jpeg";
     const nombreOut = isPdf ? file.name : file.name.replace(/\.[^.]+$/, ".jpg");
@@ -37,12 +36,10 @@ async function subirADrive(file, trimestre, anyo, tipo) {
       r.readAsDataURL(fileToSend);
     });
 
-    const resp = await fetch("/api/ai-extract", {
+    const resp = await fetch(N8N_UPLOAD_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "drive-upload",
-        appsScriptUrl: APPS_SCRIPT_URL,
         file: base64,
         nombre: nombreOut,
         mimeType: mimeOut,
@@ -54,7 +51,7 @@ async function subirADrive(file, trimestre, anyo, tipo) {
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    if (!data.success) throw new Error(data.error || "Apps Script error");
+    if (!data.success) throw new Error(data.error || "n8n Drive error");
     return data.fileUrl || true;
   } catch(e) {
     throw new Error("Drive: " + e.message);
@@ -89,7 +86,7 @@ const calcBase = (f) => {
 
 // Mueve el archivo de una factura a la subcarpeta "Eliminadas" en Drive
 async function moverArchivoAEliminadas(factura) {
-  if (!factura.drive_url || !APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT") return;
+  if (!factura.drive_url) return;
   const match = (factura.drive_url || "").match(/\/file\/d\/([^/?]+)/);
   if (!match) return;
   const fileId = match[1];
@@ -98,17 +95,10 @@ async function moverArchivoAEliminadas(factura) {
   const anyo = fecha.split("/")[2] || new Date().getFullYear().toString();
   const trimestre = mes<=3?"T1":mes<=6?"T2":mes<=9?"T3":"T4";
   try {
-    await fetch("/api/ai-extract", {
+    await fetch(N8N_MOVE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "drive-move",
-        appsScriptUrl: APPS_SCRIPT_URL,
-        fileId,
-        trimestre,
-        anyo,
-        tipo: factura.tipo || "gasto",
-      }),
+      body: JSON.stringify({ fileId, trimestre, anyo, tipo: factura.tipo || "gasto" }),
     });
   } catch(e) { /* silently ignore — el registro se elimina igualmente */ }
 }
