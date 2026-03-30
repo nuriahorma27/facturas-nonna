@@ -224,7 +224,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const meta = $input.first().json;\nconst src = $('Parsear datos').first().json;\nreturn [{\n  json: { ...src, fileId: meta.id },\n  binary: {\n    data: {\n      data: src.fileBase64,\n      mimeType: src.mimeType,\n      fileName: src.fileName,\n      fileExtension: src.fileName.split('.').pop()\n    }\n  }\n}];"
+        "jsCode": "const meta = $input.first().json;\nconst src = $('Parsear datos').first().json;\nconst buf = Buffer.from(src.fileBase64, 'base64');\nconst binaryData = await $helpers.prepareBinaryData(buf, src.fileName, src.mimeType);\nreturn [{\n  json: { ...src, fileId: meta.id },\n  binary: { data: binaryData }\n}];"
       },
       "id": "n14",
       "name": "Preparar binario",
