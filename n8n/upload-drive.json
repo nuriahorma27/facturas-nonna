@@ -52,7 +52,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const res = $input.first().json;\nconst data = $('Parsear datos').first().json;\nconst trimFolderId = (res.files && res.files.length > 0) ? res.files[0].id : null;\nreturn [{ json: { ...data, trimFolderId } }];"
+        "jsCode": "const res = $input.first().json;\nconst data = $('Parsear datos').first().json;\nconst trimFolderId = (res.files && res.files.length > 0) ? res.files[0].id : '';\nreturn [{ json: { ...data, trimFolderId } }];"
       },
       "id": "n4",
       "name": "Extraer ID trimestre",
@@ -63,7 +63,7 @@
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
           "conditions": [
             {
               "id": "cond-trim",
@@ -140,7 +140,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const res = $input.first().json;\nconst data = $('Parsear datos').first().json;\nconst trimFolderId = $input.first().json.trimFolderId ?? $('Extraer ID trimestre').first().json.trimFolderId;\nconst tipoFolderId = (res.files && res.files.length > 0) ? res.files[0].id : null;\nreturn [{ json: { ...data, trimFolderId, tipoFolderId } }];"
+        "jsCode": "const res = $input.first().json;\nconst data = $('Parsear datos').first().json;\n\n// Obtener trimFolderId desde el nodo que lo tenga (puede haber sido creado o ya existir)\nlet trimFolderId = '';\ntry { trimFolderId = $('ID trimestre creado').first().json.trimFolderId || ''; } catch(e) {}\nif (!trimFolderId) {\n  try { trimFolderId = $('Extraer ID trimestre').first().json.trimFolderId || ''; } catch(e) {}\n}\n\nconst tipoFolderId = (res.files && res.files.length > 0) ? res.files[0].id : '';\nreturn [{ json: { ...data, trimFolderId, tipoFolderId } }];"
       },
       "id": "n9",
       "name": "Extraer ID tipo",
@@ -151,7 +151,7 @@
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
           "conditions": [
             {
               "id": "cond-tipo",
@@ -193,7 +193,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const created = $input.first().json;\nconst data = $('Parsear datos').first().json;\nconst trimFolderId = $('Extraer ID tipo').first().json.trimFolderId;\nreturn [{ json: { ...data, trimFolderId, tipoFolderId: created.id } }];"
+        "jsCode": "const created = $input.first().json;\nconst data = $('Parsear datos').first().json;\n\n// Recuperar trimFolderId igual que en Extraer ID tipo\nlet trimFolderId = '';\ntry { trimFolderId = $('ID trimestre creado').first().json.trimFolderId || ''; } catch(e) {}\nif (!trimFolderId) {\n  try { trimFolderId = $('Extraer ID trimestre').first().json.trimFolderId || ''; } catch(e) {}\n}\n\nreturn [{ json: { ...data, trimFolderId, tipoFolderId: created.id } }];"
       },
       "id": "n12",
       "name": "ID tipo creado",
