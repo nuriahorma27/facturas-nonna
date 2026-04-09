@@ -2,82 +2,63 @@
   "name": "Facturas - Subir a Drive",
   "nodes": [
     {
-      "id": "n1",
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
+      "id": "n1", "name": "Webhook",
+      "type": "n8n-nodes-base.webhook", "typeVersion": 2,
       "position": [240, 300],
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "facturas-drive-upload",
-        "responseMode": "responseNode",
-        "options": {}
-      },
+      "parameters": { "httpMethod": "POST", "path": "facturas-drive-upload", "responseMode": "responseNode", "options": {} },
       "webhookId": "facturas-drive-upload"
     },
     {
-      "id": "n2",
-      "name": "Parsear datos",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "n2", "name": "Parsear datos",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
       "position": [460, 300],
       "parameters": {
         "jsCode": "const b = $input.first().json?.body ?? $input.first().json;\nconst trim = b.trimestre ?? 'T1';\nconst anyo = String(b.anyo ?? new Date().getFullYear());\nconst tipo = b.tipo ?? 'gasto';\nreturn [{ json: {\n  fileBase64: b.file,\n  fileName: b.nombre ?? ('factura_' + Date.now() + '.pdf'),\n  mimeType: b.mimeType ?? 'application/pdf',\n  trimFolder: trim + ' - ' + anyo,\n  tipoFolder: tipo === 'ingreso' ? 'Ingresos' : 'Gastos',\n  rootId: '1_-4IPitaopGpH6XCfcvOIhcB6c9V1cM5'\n} }];"
       }
     },
     {
-      "id": "n3",
-      "name": "Buscar carpeta trimestre",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [680, 300],
+      "id": "n3", "name": "Buscar carpeta trimestre",
+      "type": "n8n-nodes-base.googleDrive", "typeVersion": 3,
+      "position": [680, 160],
       "parameters": {
-        "method": "GET",
-        "url": "https://www.googleapis.com/drive/v3/files",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            { "name": "q", "value": "={{ \"'\" + $json.rootId + \"' in parents and name = '\" + $json.trimFolder + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}" },
-            { "name": "fields", "value": "files(id,name)" },
-            { "name": "pageSize", "value": "1" }
-          ]
-        },
+        "resource": "fileFolder",
+        "operation": "search",
+        "queryString": "={{ \"'\" + $json.rootId + \"' in parents and name = '\" + $json.trimFolder + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}",
+        "returnAll": false,
+        "limit": 1,
         "options": {}
       }
     },
     {
-      "id": "n4",
-      "name": "Extraer ID trimestre",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "n4", "name": "Merge trimestre",
+      "type": "n8n-nodes-base.merge", "typeVersion": 3,
       "position": [900, 300],
+      "parameters": { "mode": "append", "options": {} }
+    },
+    {
+      "id": "n5", "name": "Extraer ID trimestre",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [1100, 300],
       "parameters": {
-        "jsCode": "const res = $input.first().json;\nconst data = $('Parsear datos').first().json;\nconst trimFolderId = (res.files && res.files.length > 0) ? res.files[0].id : '';\nreturn [{ json: { ...data, trimFolderId } }];"
+        "jsCode": "const items = $input.all();\nconst base = items.find(it => !!it.json.fileBase64);\nconst found = items.find(it => it.json.id && !it.json.fileBase64);\nconst trimFolderId = found ? found.json.id : '';\nreturn [{ json: { ...base.json, trimFolderId } }];"
       }
     },
     {
-      "id": "n5",
-      "name": "¿Crear carpeta trimestre?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1120, 300],
+      "id": "n6", "name": "¿Crear carpeta trimestre?",
+      "type": "n8n-nodes-base.if", "typeVersion": 2,
+      "position": [1300, 300],
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
           "conditions": [{ "id": "c1", "leftValue": "={{ $json.trimFolderId }}", "rightValue": "", "operator": { "type": "string", "operation": "isEmpty" } }],
           "combinator": "and"
-        },
-        "options": {}
+        }, "options": {}
       }
     },
     {
-      "id": "n6",
-      "name": "Crear carpeta trimestre",
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [1340, 160],
+      "id": "n7", "name": "Crear carpeta trimestre",
+      "type": "n8n-nodes-base.googleDrive", "typeVersion": 3,
+      "position": [1500, 160],
       "parameters": {
         "resource": "folder",
         "operation": "create",
@@ -87,68 +68,56 @@
       }
     },
     {
-      "id": "n7",
-      "name": "ID trimestre creado",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1560, 160],
+      "id": "n8", "name": "ID trimestre creado",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [1700, 160],
       "parameters": {
         "jsCode": "const created = $input.first().json;\nconst data = $('Parsear datos').first().json;\nreturn [{ json: { ...data, trimFolderId: created.id } }];"
       }
     },
     {
-      "id": "n8",
-      "name": "Buscar carpeta tipo",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [1780, 300],
+      "id": "n9", "name": "Buscar carpeta tipo",
+      "type": "n8n-nodes-base.googleDrive", "typeVersion": 3,
+      "position": [1900, 160],
       "parameters": {
-        "method": "GET",
-        "url": "https://www.googleapis.com/drive/v3/files",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "googleDriveOAuth2Api",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            { "name": "q", "value": "={{ \"'\" + $json.trimFolderId + \"' in parents and name = '\" + $json.tipoFolder + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}" },
-            { "name": "fields", "value": "files(id,name)" },
-            { "name": "pageSize", "value": "1" }
-          ]
-        },
+        "resource": "fileFolder",
+        "operation": "search",
+        "queryString": "={{ \"'\" + $json.trimFolderId + \"' in parents and name = '\" + $json.tipoFolder + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}",
+        "returnAll": false,
+        "limit": 1,
         "options": {}
       }
     },
     {
-      "id": "n9",
-      "name": "Extraer ID tipo",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2000, 300],
+      "id": "n10", "name": "Merge tipo",
+      "type": "n8n-nodes-base.merge", "typeVersion": 3,
+      "position": [2100, 300],
+      "parameters": { "mode": "append", "options": {} }
+    },
+    {
+      "id": "n11", "name": "Extraer ID tipo",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [2300, 300],
       "parameters": {
-        "jsCode": "const res = $input.first().json;\nconst data = $('Parsear datos').first().json;\nlet trimFolderId = '';\ntry { trimFolderId = $('ID trimestre creado').first().json.trimFolderId || ''; } catch(e) {}\nif (!trimFolderId) { try { trimFolderId = $('Extraer ID trimestre').first().json.trimFolderId || ''; } catch(e) {} }\nconst tipoFolderId = (res.files && res.files.length > 0) ? res.files[0].id : '';\nreturn [{ json: { ...data, trimFolderId, tipoFolderId } }];"
+        "jsCode": "const items = $input.all();\nconst base = items.find(it => 'trimFolderId' in it.json);\nconst found = items.find(it => it.json.id && !('trimFolderId' in it.json));\nconst tipoFolderId = found ? found.json.id : '';\nreturn [{ json: { ...base.json, tipoFolderId } }];"
       }
     },
     {
-      "id": "n10",
-      "name": "¿Crear carpeta tipo?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [2220, 300],
+      "id": "n12", "name": "¿Crear carpeta tipo?",
+      "type": "n8n-nodes-base.if", "typeVersion": 2,
+      "position": [2500, 300],
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
           "conditions": [{ "id": "c2", "leftValue": "={{ $json.tipoFolderId }}", "rightValue": "", "operator": { "type": "string", "operation": "isEmpty" } }],
           "combinator": "and"
-        },
-        "options": {}
+        }, "options": {}
       }
     },
     {
-      "id": "n11",
-      "name": "Crear carpeta tipo",
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [2440, 160],
+      "id": "n13", "name": "Crear carpeta tipo",
+      "type": "n8n-nodes-base.googleDrive", "typeVersion": 3,
+      "position": [2700, 160],
       "parameters": {
         "resource": "folder",
         "operation": "create",
@@ -158,31 +127,25 @@
       }
     },
     {
-      "id": "n12",
-      "name": "ID tipo creado",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2660, 160],
+      "id": "n14", "name": "ID tipo creado",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [2900, 160],
       "parameters": {
-        "jsCode": "const created = $input.first().json;\nconst data = $('Parsear datos').first().json;\nlet trimFolderId = '';\ntry { trimFolderId = $('ID trimestre creado').first().json.trimFolderId || ''; } catch(e) {}\nif (!trimFolderId) { try { trimFolderId = $('Extraer ID trimestre').first().json.trimFolderId || ''; } catch(e) {} }\nreturn [{ json: { ...data, trimFolderId, tipoFolderId: created.id } }];"
+        "jsCode": "const created = $input.first().json;\nconst data = $('Extraer ID tipo').first().json;\nreturn [{ json: { ...data, tipoFolderId: created.id } }];"
       }
     },
     {
-      "id": "n13",
-      "name": "Preparar binario",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2880, 300],
+      "id": "n15", "name": "Preparar binario",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [3100, 300],
       "parameters": {
         "jsCode": "const data = $input.first().json;\nconst src = $('Parsear datos').first().json;\nconst buf = Buffer.from(src.fileBase64, 'base64');\nconst binaryData = await $helpers.prepareBinaryData(buf, data.fileName, data.mimeType);\nreturn [{ json: { ...data }, binary: { data: binaryData } }];"
       }
     },
     {
-      "id": "n14",
-      "name": "Subir archivo",
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [3100, 300],
+      "id": "n16", "name": "Subir archivo",
+      "type": "n8n-nodes-base.googleDrive", "typeVersion": 3,
+      "position": [3300, 300],
       "parameters": {
         "resource": "file",
         "operation": "upload",
@@ -193,54 +156,57 @@
       }
     },
     {
-      "id": "n15",
-      "name": "Construir respuesta",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [3320, 300],
+      "id": "n17", "name": "Construir respuesta",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [3500, 300],
       "parameters": {
-        "jsCode": "const f = $input.first().json;\nconst fileId = f.id;\nreturn [{ json: { success: true, fileId, fileUrl: 'https://drive.google.com/file/d/' + fileId + '/view' } }];"
+        "jsCode": "const f = $input.first().json;\nreturn [{ json: { success: true, fileId: f.id, fileUrl: 'https://drive.google.com/file/d/' + f.id + '/view' } }];"
       }
     },
     {
-      "id": "n16",
-      "name": "Responder",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
-      "position": [3540, 300],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
-        "options": {}
-      }
+      "id": "n18", "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1,
+      "position": [3700, 300],
+      "parameters": { "respondWith": "json", "responseBody": "={{ JSON.stringify($json) }}", "options": {} }
     }
   ],
   "connections": {
     "Webhook":                    { "main": [[{ "node": "Parsear datos",             "type": "main", "index": 0 }]] },
-    "Parsear datos":              { "main": [[{ "node": "Buscar carpeta trimestre",   "type": "main", "index": 0 }]] },
-    "Buscar carpeta trimestre":   { "main": [[{ "node": "Extraer ID trimestre",       "type": "main", "index": 0 }]] },
-    "Extraer ID trimestre":       { "main": [[{ "node": "¿Crear carpeta trimestre?",  "type": "main", "index": 0 }]] },
+    "Parsear datos":              { "main": [[
+      { "node": "Buscar carpeta trimestre", "type": "main", "index": 0 },
+      { "node": "Merge trimestre",          "type": "main", "index": 0 }
+    ]] },
+    "Buscar carpeta trimestre":   { "main": [[{ "node": "Merge trimestre",  "type": "main", "index": 1 }]] },
+    "Merge trimestre":            { "main": [[{ "node": "Extraer ID trimestre", "type": "main", "index": 0 }]] },
+    "Extraer ID trimestre":       { "main": [[{ "node": "¿Crear carpeta trimestre?", "type": "main", "index": 0 }]] },
     "¿Crear carpeta trimestre?":  {
       "main": [
         [{ "node": "Crear carpeta trimestre", "type": "main", "index": 0 }],
-        [{ "node": "Buscar carpeta tipo",     "type": "main", "index": 0 }]
+        [
+          { "node": "Buscar carpeta tipo", "type": "main", "index": 0 },
+          { "node": "Merge tipo",          "type": "main", "index": 0 }
+        ]
       ]
     },
-    "Crear carpeta trimestre":    { "main": [[{ "node": "ID trimestre creado",        "type": "main", "index": 0 }]] },
-    "ID trimestre creado":        { "main": [[{ "node": "Buscar carpeta tipo",        "type": "main", "index": 0 }]] },
-    "Buscar carpeta tipo":        { "main": [[{ "node": "Extraer ID tipo",            "type": "main", "index": 0 }]] },
-    "Extraer ID tipo":            { "main": [[{ "node": "¿Crear carpeta tipo?",       "type": "main", "index": 0 }]] },
+    "Crear carpeta trimestre":    { "main": [[{ "node": "ID trimestre creado", "type": "main", "index": 0 }]] },
+    "ID trimestre creado":        { "main": [[
+      { "node": "Buscar carpeta tipo", "type": "main", "index": 0 },
+      { "node": "Merge tipo",          "type": "main", "index": 0 }
+    ]] },
+    "Buscar carpeta tipo":        { "main": [[{ "node": "Merge tipo", "type": "main", "index": 1 }]] },
+    "Merge tipo":                 { "main": [[{ "node": "Extraer ID tipo", "type": "main", "index": 0 }]] },
+    "Extraer ID tipo":            { "main": [[{ "node": "¿Crear carpeta tipo?", "type": "main", "index": 0 }]] },
     "¿Crear carpeta tipo?":       {
       "main": [
-        [{ "node": "Crear carpeta tipo",   "type": "main", "index": 0 }],
-        [{ "node": "Preparar binario",     "type": "main", "index": 0 }]
+        [{ "node": "Crear carpeta tipo", "type": "main", "index": 0 }],
+        [{ "node": "Preparar binario",   "type": "main", "index": 0 }]
       ]
     },
-    "Crear carpeta tipo":         { "main": [[{ "node": "ID tipo creado",             "type": "main", "index": 0 }]] },
-    "ID tipo creado":             { "main": [[{ "node": "Preparar binario",           "type": "main", "index": 0 }]] },
-    "Preparar binario":           { "main": [[{ "node": "Subir archivo",              "type": "main", "index": 0 }]] },
-    "Subir archivo":              { "main": [[{ "node": "Construir respuesta",        "type": "main", "index": 0 }]] },
-    "Construir respuesta":        { "main": [[{ "node": "Responder",                  "type": "main", "index": 0 }]] }
+    "Crear carpeta tipo":         { "main": [[{ "node": "ID tipo creado",   "type": "main", "index": 0 }]] },
+    "ID tipo creado":             { "main": [[{ "node": "Preparar binario", "type": "main", "index": 0 }]] },
+    "Preparar binario":           { "main": [[{ "node": "Subir archivo",    "type": "main", "index": 0 }]] },
+    "Subir archivo":              { "main": [[{ "node": "Construir respuesta", "type": "main", "index": 0 }]] },
+    "Construir respuesta":        { "main": [[{ "node": "Responder",           "type": "main", "index": 0 }]] }
   },
   "active": false,
   "settings": { "executionOrder": "v1" },
