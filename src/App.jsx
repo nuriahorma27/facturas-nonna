@@ -443,7 +443,40 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
   .mob-nav-it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9C8E7A;cursor:pointer;font-size:9px;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;border:none;background:none;padding:0}
   .mob-nav-it.active{color:#B8962E}
   .mob-nav-it svg{width:20px;height:20px}
+  .concil-cols{grid-template-columns:1fr}
+  .concil-col-hd{padding:12px 14px}
+  .concil-card{padding:12px 14px}
 }
+
+/* ── Conciliación ─────────────────────────────────────────── */
+.concil-type-tabs{display:grid;grid-template-columns:1fr 1fr;margin-bottom:28px;border:.5px solid #D4C5A9}
+.concil-type-tab{padding:14px 0;text-align:center;font-size:14px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;border:none;background:#F5F0E8;font-family:'Cormorant Garamond',serif;color:#9C8E7A;transition:all .2s}
+.concil-type-tab.active{background:#2C2417;color:#F5F0E8}
+.concil-pills{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+.concil-pill{padding:10px 18px;background:#F5F0E8;border:.5px solid #D4C5A9;display:flex;flex-direction:column;gap:2px}
+.concil-pill-label{font-size:10px;letter-spacing:.22em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.concil-pill-val{font-size:19px;font-weight:500;color:#2C2417}
+.concil-pill-n{font-size:11px;color:#9C8E7A}
+.concil-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start}
+.concil-col{background:#F5F0E8;border:.5px solid #D4C5A9;min-height:120px}
+.concil-col-hd{padding:16px 18px;border-bottom:.5px solid #D4C5A9}
+.concil-col-status{font-size:11px;letter-spacing:.25em;text-transform:uppercase;display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.concil-col-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.concil-col-total{font-size:20px;font-weight:500;margin-bottom:1px}
+.concil-col-count{font-size:12px;color:#9C8E7A}
+.concil-card{padding:14px 18px;border-bottom:.5px solid #D4C5A9;transition:background .2s}
+.concil-card:last-child{border-bottom:none}
+.concil-card:hover{background:#EDE5D0}
+.concil-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.concil-card-nombre{font-size:14px;color:#2C2417;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.concil-card-importe{font-size:15px;font-weight:500;color:#2C2417;flex-shrink:0}
+.concil-card-fecha{font-size:11px;color:#9C8E7A;margin-bottom:8px}
+.concil-card-btns{display:flex;gap:5px;flex-wrap:wrap}
+.cc-btn{padding:4px 9px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;border:.5px solid;cursor:pointer;font-family:'Cormorant Garamond',serif;transition:all .15s;background:transparent}
+.cc-btn-v{border-color:#7BAE7F;color:#5A8A5E}.cc-btn-v:hover,.cc-btn-v.on{background:#7BAE7F;color:#fff;border-color:#7BAE7F}
+.cc-btn-d{border-color:#C4A540;color:#8B7020}.cc-btn-d:hover,.cc-btn-d.on{background:#C4A540;color:#fff;border-color:#C4A540}
+.cc-btn-s{border-color:#D4C5A9;color:#9C8E7A}.cc-btn-s:hover,.cc-btn-s.on{background:#9C8E7A;color:#fff;border-color:#9C8E7A}
+.cc-btn:disabled{opacity:.4;cursor:not-allowed}
 `;
 
 // ── Iconos ───────────────────────────────────────────────────
@@ -461,6 +494,7 @@ const I = {
   pdf:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>,
   xl:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>,
   zip:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>,
+  concil: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z"/></svg>,
 };
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -1626,6 +1660,111 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
 const MOCK_2024=[{mes:"Ene",g:3200,i:4100},{mes:"Feb",g:2800,i:3600},{mes:"Mar",g:4100,i:5200},{mes:"Abr",g:3600,i:4800},{mes:"May",g:3900,i:5100},{mes:"Jun",g:4200,i:6200},{mes:"Jul",g:2900,i:3800},{mes:"Ago",g:2100,i:2900},{mes:"Sep",g:3800,i:5400},{mes:"Oct",g:4500,i:6100},{mes:"Nov",g:5200,i:7200},{mes:"Dic",g:4800,i:6800}];
 const TRIM={T1:[0,1,2],T2:[3,4,5],T3:[6,7,8],T4:[9,10,11]};
 
+// ── Conciliación ─────────────────────────────────────────────
+function ViewConciliacion({ facturas, toast }) {
+  const [tab, setTab] = useState("ingresos");
+  // Cache local de cambios — se aplica instantáneamente sin recargar
+  const [overrides, setOverrides] = useState({});
+
+  const lista = useMemo(() =>
+    facturas.filter(f => !f.eliminado_en && f.tipo === tab),
+    [facturas, tab]
+  );
+
+  const estadoOf = (f) => overrides[f.id] !== undefined ? overrides[f.id] : (f.conciliacion ?? null);
+
+  const verificados = lista.filter(f => estadoOf(f) === "verificado");
+  const dudosos     = lista.filter(f => estadoOf(f) === "dudoso");
+  const sinVerif    = lista.filter(f => !estadoOf(f));
+
+  const sumTotal = (arr) => arr.reduce((s, f) => s + (Number(f.total) || 0), 0);
+
+  const cambiar = async (factura, nuevo) => {
+    const prev = estadoOf(factura);
+    const val = nuevo === prev ? null : nuevo; // toggle
+    setOverrides(o => ({ ...o, [factura.id]: val }));
+    try {
+      const supa = await db();
+      await supa.from("facturas").update({ conciliacion: val }).eq("id", factura.id);
+    } catch(e) {
+      setOverrides(o => ({ ...o, [factura.id]: prev })); // revert
+      toast && toast({ type: "err", msg: "Error al guardar" });
+    }
+  };
+
+  const cols = [
+    { key: "verificado", label: "Verificado",       dot: "#7BAE7F", items: verificados },
+    { key: "dudoso",     label: "Dudoso",            dot: "#C4A540", items: dudosos },
+    { key: null,         label: "Sin verificar",     dot: "#9C8E7A", items: sinVerif },
+  ];
+
+  const CCard = ({ f }) => {
+    const est = estadoOf(f);
+    const nombre = f.proveedor || f.concepto || f.descripcion || "—";
+    return (
+      <div className="concil-card">
+        <div className="concil-card-top">
+          <span className="concil-card-nombre" title={nombre}>{nombre}</span>
+          <span className="concil-card-importe">{fmt(f.total || 0)}</span>
+        </div>
+        <div className="concil-card-fecha">{f.fecha || "—"}</div>
+        <div className="concil-card-btns">
+          <button className={"cc-btn cc-btn-v"+(est==="verificado"?" on":"")} onClick={()=>cambiar(f,"verificado")}>✓ Verificado</button>
+          <button className={"cc-btn cc-btn-d"+(est==="dudoso"?" on":"")}     onClick={()=>cambiar(f,"dudoso")}>? Dudoso</button>
+          <button className={"cc-btn cc-btn-s"+(est===null?" on":"")}          onClick={()=>cambiar(f,null)}>— Sin verificar</button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="view">
+      <div className="eyebrow">Gestión</div>
+      <h1 className="view-title">Concilia<em>ción</em></h1>
+
+      {/* Tabs tipo */}
+      <div className="concil-type-tabs">
+        <button className={"concil-type-tab"+(tab==="ingresos"?" active":"")} onClick={()=>setTab("ingresos")}>Ingresos</button>
+        <button className={"concil-type-tab"+(tab==="gastos"?" active":"")}   onClick={()=>setTab("gastos")}>Gastos</button>
+      </div>
+
+      {/* Resumen pills */}
+      <div className="concil-pills">
+        {cols.map(c => (
+          <div key={c.label} className="concil-pill">
+            <span className="concil-pill-label">
+              <span style={{width:7,height:7,borderRadius:"50%",background:c.dot,display:"inline-block",flexShrink:0}}/>
+              {c.label}
+            </span>
+            <span className="concil-pill-val">{fmt(sumTotal(c.items))}</span>
+            <span className="concil-pill-n">{c.items.length} factura{c.items.length!==1?"s":""}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* 3 columnas */}
+      <div className="concil-cols">
+        {cols.map(c => (
+          <div key={c.label} className="concil-col">
+            <div className="concil-col-hd">
+              <div className="concil-col-status">
+                <span className="concil-col-dot" style={{background:c.dot}}/>
+                {c.label}
+              </div>
+              <div className="concil-col-total">{fmt(sumTotal(c.items))}</div>
+              <div className="concil-col-count">{c.items.length} factura{c.items.length!==1?"s":""}</div>
+            </div>
+            {c.items.length === 0
+              ? <div style={{padding:"24px 18px",fontSize:13,color:"#9C8E7A",fontStyle:"italic"}}>Sin registros</div>
+              : c.items.map(f => <CCard key={f.id} f={f}/>)
+            }
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ViewDashboard({ facturas, historico }) {
   const [vista,  setVista]  = useState("resumen");
   const [periodo,setPeriodo]= useState("mensual");
@@ -2305,11 +2444,12 @@ export default function AtelierApp() {
   };
 
   const NAV = [
-    {id:"subida",   label:"Subir facturas", icon:I.upload},
-    {id:"listado",  label:"Listado",         icon:I.list},
-    {id:"dashboard",label:"Dashboard",       icon:I.dash},
-    {id:"exportar", label:"Exportar",        icon:I.export},
-    {id:"historial",label:"Papelera",        icon:I.del},
+    {id:"subida",      label:"Subir facturas", icon:I.upload},
+    {id:"listado",     label:"Listado",         icon:I.list},
+    {id:"dashboard",   label:"Dashboard",       icon:I.dash},
+    {id:"conciliacion",label:"Conciliación",    icon:I.concil},
+    {id:"exportar",    label:"Exportar",        icon:I.export},
+    {id:"historial",   label:"Papelera",        icon:I.del},
   ];
 
   return (
@@ -2332,11 +2472,12 @@ export default function AtelierApp() {
           <div className="sb-footer"><span className="sb-dot"/>Supabase conectado</div>
         </aside>
         <main className="main">
-          {vista==="subida"    && <ViewSubida    onSaved={cargar} toast={showToast}/>}
-          {vista==="listado"   && <ViewListado   facturas={facturas} historico={historico} setHistorico={setHistorico} guardarHistorico={guardarHistorico} cargandoHist={cargandoHist} loading={loading} onRefresh={cargar} toast={showToast}/>}
-          {vista==="dashboard" && <ViewDashboard facturas={facturas} historico={historico}/>}
-          {vista==="exportar"  && <ViewExportar  facturas={facturas} historico={historico} toast={showToast}/>}
-          {vista==="historial" && <ViewHistorial onRefresh={cargar} toast={showToast}/>}
+          {vista==="subida"       && <ViewSubida       onSaved={cargar} toast={showToast}/>}
+          {vista==="listado"      && <ViewListado      facturas={facturas} historico={historico} setHistorico={setHistorico} guardarHistorico={guardarHistorico} cargandoHist={cargandoHist} loading={loading} onRefresh={cargar} toast={showToast}/>}
+          {vista==="dashboard"   && <ViewDashboard    facturas={facturas} historico={historico}/>}
+          {vista==="conciliacion"&& <ViewConciliacion facturas={facturas} toast={showToast}/>}
+          {vista==="exportar"    && <ViewExportar     facturas={facturas} historico={historico} toast={showToast}/>}
+          {vista==="historial"   && <ViewHistorial    onRefresh={cargar} toast={showToast}/>}
         </main>
         <nav className="mob-nav">
           {NAV.map(n=>(
