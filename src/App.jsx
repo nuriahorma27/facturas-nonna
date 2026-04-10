@@ -477,6 +477,50 @@ td{padding:10px 10px;font-size:14px;color:#2C2417;vertical-align:middle}
 .cc-btn-d{border-color:#C4A540;color:#8B7020}.cc-btn-d:hover,.cc-btn-d.on{background:#C4A540;color:#fff;border-color:#C4A540}
 .cc-btn-s{border-color:#D4C5A9;color:#9C8E7A}.cc-btn-s:hover,.cc-btn-s.on{background:#9C8E7A;color:#fff;border-color:#9C8E7A}
 .cc-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Conciliación bancaria ─────────────────────────────── */
+.recon-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.recon-filters{display:flex;border:.5px solid #D4C5A9;background:#F5F0E8;margin-bottom:20px}
+.recon-filter{padding:9px 18px;background:none;border:none;font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:#9C8E7A;cursor:pointer;transition:all .2s;border-right:.5px solid #D4C5A9}
+.recon-filter:last-child{border-right:none}
+.recon-filter.active{background:#2C2417;color:#F5F0E8}
+.recon-layout{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.recon-panel{background:#F5F0E8;border:.5px solid #D4C5A9}
+.recon-ph{padding:13px 16px;border-bottom:.5px solid #D4C5A9;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#5C4A2A;display:flex;align-items:center;justify-content:space-between}
+.recon-list{max-height:calc(100vh - 320px);overflow-y:auto}
+.recon-mov{padding:13px 16px;border-bottom:.5px solid #D4C5A9;cursor:pointer;transition:background .15s;position:relative}
+.recon-mov:last-child{border-bottom:none}
+.recon-mov:hover{background:#EDE5D0}
+.recon-mov.sel{background:#FAF7F0;border-left:2px solid #B8962E}
+.recon-mov.matched{background:#F0F7F0}
+.recon-mov.excluido{opacity:.45}
+.recon-mov-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:3px}
+.recon-mov-concepto{font-size:14px;color:#2C2417;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recon-mov-importe{font-size:15px;font-weight:500;flex-shrink:0}
+.recon-mov-meta{font-size:11px;color:#9C8E7A;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.recon-estado-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.conf-badge{display:inline-flex;align-items:center;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px}
+.conf-high{background:#E8F5E9;color:#2E7D32;border:.5px solid rgba(46,125,50,.3)}
+.conf-med{background:#FFF8E1;color:#8B7020;border:.5px solid rgba(184,150,46,.3)}
+.conf-low{background:#F5F5F5;color:#757575;border:.5px solid #E0E0E0}
+.recon-sug{padding:13px 16px;border-bottom:.5px solid #D4C5A9;cursor:pointer;transition:background .15s}
+.recon-sug:last-child{border-bottom:none}
+.recon-sug:hover{background:#EDE5D0}
+.recon-sug-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.recon-sug-nombre{flex:1;font-size:14px;color:#2C2417;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recon-sug-importe{font-size:14px;font-weight:500;flex-shrink:0}
+.recon-sug-meta{font-size:11px;color:#9C8E7A}
+.import-zone{border:1.5px dashed #D4C5A9;padding:40px;text-align:center;cursor:pointer;transition:all .3s;background:#F5F0E8}
+.import-zone:hover,.import-zone.drag{border-color:#B8962E;background:#FAF7F0}
+.recon-empty{padding:48px 24px;text-align:center;color:#9C8E7A;font-style:italic;font-size:16px}
+.recon-detail-hd{padding:16px;border-bottom:.5px solid #D4C5A9}
+.recon-detail-concepto{font-size:17px;color:#2C2417;margin-bottom:4px;font-weight:500}
+.recon-detail-meta{font-size:12px;color:#9C8E7A;display:flex;gap:12px;flex-wrap:wrap}
+.recon-detail-importe{font-size:28px;font-weight:300;margin-top:8px}
+.recon-sug-list-hd{padding:11px 16px;background:#EDE5D0;border-bottom:.5px solid #D4C5A9;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#5C4A2A}
+.recon-acts{display:flex;gap:8px;padding:12px 16px;border-top:.5px solid #D4C5A9;flex-wrap:wrap}
+@media(max-width:900px){.recon-layout{grid-template-columns:1fr}}
+@media(max-width:480px){.recon-layout{grid-template-columns:1fr}.recon-filter{padding:8px 10px;font-size:11px}}
 `;
 
 // ── Iconos ───────────────────────────────────────────────────
@@ -1660,107 +1704,406 @@ function ViewListado({ facturas, historico, setHistorico, guardarHistorico, carg
 const MOCK_2024=[{mes:"Ene",g:3200,i:4100},{mes:"Feb",g:2800,i:3600},{mes:"Mar",g:4100,i:5200},{mes:"Abr",g:3600,i:4800},{mes:"May",g:3900,i:5100},{mes:"Jun",g:4200,i:6200},{mes:"Jul",g:2900,i:3800},{mes:"Ago",g:2100,i:2900},{mes:"Sep",g:3800,i:5400},{mes:"Oct",g:4500,i:6100},{mes:"Nov",g:5200,i:7200},{mes:"Dic",g:4800,i:6800}];
 const TRIM={T1:[0,1,2],T2:[3,4,5],T3:[6,7,8],T4:[9,10,11]};
 
-// ── Conciliación ─────────────────────────────────────────────
+// ── Conciliación bancaria ─────────────────────────────────────
 function ViewConciliacion({ facturas, toast }) {
-  const [tab, setTab] = useState("ingresos");
-  // Cache local de cambios — se aplica instantáneamente sin recargar
-  const [overrides, setOverrides] = useState({});
+  const [movimientos, setMovimientos] = useState([]);
+  const [cargando, setCargando]       = useState(true);
+  const [filtro, setFiltro]           = useState("pendiente");
+  const [selMov, setSelMov]           = useState(null);
+  const [drag, setDrag]               = useState(false);
+  const fileRef = useRef(null);
 
-  const lista = useMemo(() =>
-    facturas.filter(f => !f.eliminado_en && f.tipo === tab),
-    [facturas, tab]
-  );
+  // ── Helpers de parsing ───────────────────────────────────────
+  const parsearImporte = (val) => {
+    if (!val && val !== 0) return 0;
+    const s = String(val).trim();
+    const clean = s.replace(/\./g, "").replace(",", ".");
+    return parseFloat(clean) || 0;
+  };
 
-  const estadoOf = (f) => overrides[f.id] !== undefined ? overrides[f.id] : (f.conciliacion ?? null);
+  const parseDateVal = (val) => {
+    if (!val) return null;
+    if (typeof val === "number") {
+      const d = new Date((val - 25569) * 86400 * 1000);
+      return d.toISOString().slice(0, 10);
+    }
+    const s = String(val).trim();
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+      const [d, m, y] = s.split("/");
+      return `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    return null;
+  };
 
-  const verificados = lista.filter(f => estadoOf(f) === "verificado");
-  const dudosos     = lista.filter(f => estadoOf(f) === "dudoso");
-  const sinVerif    = lista.filter(f => !estadoOf(f));
-
-  const sumTotal = (arr) => arr.reduce((s, f) => s + (Number(f.total) || 0), 0);
-
-  const cambiar = async (factura, nuevo) => {
-    const prev = estadoOf(factura);
-    const val = nuevo === prev ? null : nuevo; // toggle
-    setOverrides(o => ({ ...o, [factura.id]: val }));
+  // ── Cargar movimientos de Supabase ───────────────────────────
+  const cargarMovimientos = useCallback(async () => {
+    setCargando(true);
     try {
       const supa = await db();
-      await supa.from("facturas").update({ conciliacion: val }).eq("id", factura.id);
+      const { data } = await supa.from("movimientos_banco").select("*").order("fecha", { ascending: false });
+      setMovimientos(data || []);
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useEffect(() => { cargarMovimientos(); }, [cargarMovimientos]);
+
+  // ── Importar Excel ───────────────────────────────────────────
+  const importarExcel = async (file) => {
+    try {
+      const ab = await file.arrayBuffer();
+      const wb = XLSX.read(ab, { type: "array", cellDates: false });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+      if (rows.length < 2) { toast({ type: "err", msg: "Excel vacío" }); return; }
+
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const row = rows[i].map(c => String(c).toLowerCase());
+        if (row.some(c => /fecha|date/.test(c)) && row.some(c => /importe|amount|monto|cantidad/.test(c))) {
+          headerIdx = i; break;
+        }
+      }
+      const headers = rows[headerIdx].map(c => String(c).toLowerCase().trim());
+      const getCol  = (re) => headers.findIndex(h => re.test(h));
+      const ci = {
+        fecha:     getCol(/fecha|date/),
+        concepto:  getCol(/concepto|descripci/),
+        movimiento:getCol(/movimiento|tipo|type/),
+        importe:   getCol(/importe|amount|monto|cantidad/),
+        divisa:    getCol(/divisa|currency|moneda/),
+        obs:       getCol(/observaci|notes?|obs/),
+      };
+
+      const nuevos = [];
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const r   = rows[i];
+        const imp = ci.importe >= 0 ? parsearImporte(r[ci.importe]) : 0;
+        if (!imp) continue;
+        const fecha = ci.fecha >= 0 ? parseDateVal(r[ci.fecha]) : null;
+        if (!fecha) continue;
+        nuevos.push({
+          fecha,
+          concepto:     ci.concepto    >= 0 ? String(r[ci.concepto]    || "").trim() : "",
+          movimiento:   ci.movimiento  >= 0 ? String(r[ci.movimiento]  || "").trim() : "",
+          importe:      imp,
+          divisa:       ci.divisa      >= 0 ? String(r[ci.divisa]      || "EUR").trim() : "EUR",
+          observaciones:ci.obs         >= 0 ? String(r[ci.obs]         || "").trim() : "",
+          estado:       "pendiente",
+        });
+      }
+
+      if (!nuevos.length) { toast({ type: "err", msg: "No se encontraron movimientos válidos" }); return; }
+      const supa = await db();
+      const { error } = await supa.from("movimientos_banco").insert(nuevos);
+      if (error) throw error;
+      toast({ type: "ok", msg: `${nuevos.length} movimientos importados` });
+      cargarMovimientos();
     } catch(e) {
-      setOverrides(o => ({ ...o, [factura.id]: prev })); // revert
-      toast && toast({ type: "err", msg: "Error al guardar" });
+      toast({ type: "err", msg: "Error al importar: " + e.message });
     }
   };
 
-  const cols = [
-    { key: "verificado", label: "Verificado",       dot: "#7BAE7F", items: verificados },
-    { key: "dudoso",     label: "Dudoso",            dot: "#C4A540", items: dudosos },
-    { key: null,         label: "Sin verificar",     dot: "#9C8E7A", items: sinVerif },
-  ];
+  // ── Matching algorithm ───────────────────────────────────────
+  const ingresos = useMemo(() => facturas.filter(f => !f.eliminado_en && f.tipo === "ingreso"), [facturas]);
 
-  const CCard = ({ f }) => {
-    const est = estadoOf(f);
-    const nombre = f.proveedor || f.concepto || f.descripcion || "—";
-    return (
-      <div className="concil-card">
-        <div className="concil-card-top">
-          <span className="concil-card-nombre" title={nombre}>{nombre}</span>
-          <span className="concil-card-importe">{fmt(f.total || 0)}</span>
-        </div>
-        <div className="concil-card-fecha">{f.fecha || "—"}</div>
-        <div className="concil-card-btns">
-          <button className={"cc-btn cc-btn-v"+(est==="verificado"?" on":"")} onClick={()=>cambiar(f,"verificado")}>✓ Verificado</button>
-          <button className={"cc-btn cc-btn-d"+(est==="dudoso"?" on":"")}     onClick={()=>cambiar(f,"dudoso")}>? Dudoso</button>
-          <button className={"cc-btn cc-btn-s"+(est===null?" on":"")}          onClick={()=>cambiar(f,null)}>— Sin verificar</button>
-        </div>
-      </div>
-    );
+  const extractOrderNum = (text) => {
+    if (!text) return null;
+    const m = String(text).match(/#(\d{4,})|pedido\s*(\d+)|order\s*(\d+)|ref\.?\s*(\d+)|nº?\s*(\d{4,})/i);
+    return m ? (m[1]||m[2]||m[3]||m[4]||m[5]) : null;
   };
 
+  const nameSim = (a, b) => {
+    if (!a || !b) return 0;
+    const tok = s => String(s).toLowerCase().replace(/[^a-z0-9áéíóúñ\s]/gi,"").split(/\s+/).filter(t => t.length > 2);
+    const ta = new Set(tok(a));
+    const tb = new Set(tok(b));
+    if (!ta.size || !tb.size) return 0;
+    let hits = 0;
+    ta.forEach(t => { if (tb.has(t)) hits++; });
+    return hits / Math.max(ta.size, tb.size);
+  };
+
+  const getConfianza = (mov, factura) => {
+    const movImp = Math.abs(mov.importe);
+    const facImp = Number(factura.total) || 0;
+    if (!facImp) return 0;
+    const diffPct = Math.abs(movImp - facImp) / facImp;
+    if (diffPct > 0.10) return 0;
+
+    // Tier 1: order number match → 80–99
+    const orderMov = extractOrderNum(mov.concepto) || extractOrderNum(mov.observaciones);
+    const orderFac = extractOrderNum(factura.concepto) || extractOrderNum(factura.numero_factura);
+    if (orderMov && orderFac && orderMov === orderFac) {
+      return Math.max(80, Math.min(99, 90 - Math.round(diffPct * 200)));
+    }
+
+    // Tier 2: amount + date + name → 0–79
+    let score = 50;
+    if (diffPct === 0)        score += 20;
+    else if (diffPct < 0.005) score += 15;
+    else if (diffPct < 0.02)  score += 10;
+    else score += Math.max(0, 5 - Math.round(diffPct * 50));
+
+    if (mov.fecha && factura.fecha) {
+      const movDate = new Date(mov.fecha);
+      const [dd, mm, yy] = String(factura.fecha).split("/");
+      const facDate = new Date(`${yy}-${mm}-${dd}`);
+      if (!isNaN(movDate) && !isNaN(facDate)) {
+        const days = Math.abs((movDate - facDate) / 86400000);
+        if (days === 0)       score += 20;
+        else if (days <= 2)   score += 15;
+        else if (days <= 5)   score += 10;
+        else if (days <= 10)  score +=  3;
+        else                  score -= 10;
+      }
+    }
+
+    const sim = nameSim(mov.concepto || mov.observaciones || "", factura.proveedor || factura.concepto || "");
+    score += Math.round(sim * 20);
+
+    return Math.max(0, Math.min(79, score));
+  };
+
+  const getSugs = useCallback((mov) => {
+    if (!mov) return [];
+    return ingresos
+      .map(f => ({ f, conf: getConfianza(mov, f) }))
+      .filter(({ conf }) => conf >= 30)
+      .sort((a, b) => b.conf - a.conf)
+      .slice(0, 6);
+  }, [ingresos]);
+
+  // ── Acciones ─────────────────────────────────────────────────
+  const confirmar = async (movId, facturaId, confianza) => {
+    try {
+      const supa = await db();
+      await supa.from("movimientos_banco").update({ estado: "confirmado", factura_id: facturaId, confianza }).eq("id", movId);
+      await supa.from("facturas").update({ conciliacion: "verificado" }).eq("id", facturaId);
+      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "confirmado", factura_id: facturaId, confianza } : m));
+      setSelMov(null);
+      toast({ type: "ok", msg: "Movimiento confirmado" });
+    } catch(e) { toast({ type: "err", msg: "Error: " + e.message }); }
+  };
+
+  const excluir = async (movId) => {
+    try {
+      const supa = await db();
+      await supa.from("movimientos_banco").update({ estado: "excluido", factura_id: null }).eq("id", movId);
+      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "excluido", factura_id: null } : m));
+      setSelMov(null);
+      toast({ type: "ok", msg: "Movimiento excluido" });
+    } catch(e) { toast({ type: "err", msg: "Error: " + e.message }); }
+  };
+
+  const deshacer = async (movId) => {
+    try {
+      const supa = await db();
+      const mov = movimientos.find(m => m.id === movId);
+      if (mov?.factura_id) await supa.from("facturas").update({ conciliacion: null }).eq("id", mov.factura_id);
+      await supa.from("movimientos_banco").update({ estado: "pendiente", factura_id: null, confianza: null }).eq("id", movId);
+      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "pendiente", factura_id: null, confianza: null } : m));
+      toast({ type: "ok", msg: "Deshecho" });
+    } catch(e) { toast({ type: "err", msg: "Error: " + e.message }); }
+  };
+
+  // ── Derived state ────────────────────────────────────────────
+  const movsVisibles  = useMemo(() => filtro === "todos" ? movimientos : movimientos.filter(m => m.estado === filtro), [movimientos, filtro]);
+  const selectedMov   = selMov ? movimientos.find(m => m.id === selMov) : null;
+  const sugs          = useMemo(() => getSugs(selectedMov), [selectedMov, getSugs]);
+  const pendienteMov  = movimientos.filter(m => m.estado === "pendiente").length;
+  const confirmedMov  = movimientos.filter(m => m.estado === "confirmado").length;
+
+  const confBadge = (conf) => {
+    if (conf >= 80) return <span className="conf-badge conf-high">{conf}%</span>;
+    if (conf >= 60) return <span className="conf-badge conf-med">{conf}%</span>;
+    return <span className="conf-badge conf-low">{conf}%</span>;
+  };
+
+  const estadoDot = (estado) => {
+    const c = { pendiente: "#B8962E", confirmado: "#7BAE7F", excluido: "#9C8E7A" };
+    return <span className="recon-estado-dot" style={{ background: c[estado] || "#D4C5A9" }}/>;
+  };
+
+  // ── Render ───────────────────────────────────────────────────
   return (
     <div className="view">
-      <div className="eyebrow">Gestión</div>
+      <div className="eyebrow">Gestión bancaria</div>
       <h1 className="view-title">Concilia<em>ción</em></h1>
 
-      {/* Tabs tipo */}
-      <div className="concil-type-tabs">
-        <button className={"concil-type-tab"+(tab==="ingresos"?" active":"")} onClick={()=>setTab("ingresos")}>Ingresos</button>
-        <button className={"concil-type-tab"+(tab==="gastos"?" active":"")}   onClick={()=>setTab("gastos")}>Gastos</button>
+      {/* Top bar */}
+      <div className="recon-topbar">
+        <div className="concil-pills" style={{ margin: 0 }}>
+          <div className="concil-pill">
+            <span className="concil-pill-label"><span style={{ width:7,height:7,borderRadius:"50%",background:"#B8962E",display:"inline-block" }}/> Pendientes</span>
+            <span className="concil-pill-val">{pendienteMov}</span>
+          </div>
+          <div className="concil-pill">
+            <span className="concil-pill-label"><span style={{ width:7,height:7,borderRadius:"50%",background:"#7BAE7F",display:"inline-block" }}/> Confirmados</span>
+            <span className="concil-pill-val">{confirmedMov}</span>
+          </div>
+          <div className="concil-pill">
+            <span className="concil-pill-label">Total</span>
+            <span className="concil-pill-val">{movimientos.length}</span>
+          </div>
+        </div>
+        <div style={{ display:"flex",gap:10,alignItems:"center",flexWrap:"wrap" }}>
+          <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display:"none" }}
+            onChange={e => { if(e.target.files[0]) importarExcel(e.target.files[0]); e.target.value=""; }}/>
+          <button className="btn-out" onClick={() => fileRef.current.click()}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ width:16,height:16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+            <span>Importar extracto</span>
+          </button>
+        </div>
       </div>
 
-      {/* Resumen pills */}
-      <div className="concil-pills">
-        {cols.map(c => (
-          <div key={c.label} className="concil-pill">
-            <span className="concil-pill-label">
-              <span style={{width:7,height:7,borderRadius:"50%",background:c.dot,display:"inline-block",flexShrink:0}}/>
-              {c.label}
-            </span>
-            <span className="concil-pill-val">{fmt(sumTotal(c.items))}</span>
-            <span className="concil-pill-n">{c.items.length} factura{c.items.length!==1?"s":""}</span>
-          </div>
+      {/* Filters */}
+      <div className="recon-filters">
+        {[["pendiente","Pendientes"],["confirmado","Confirmados"],["excluido","Excluidos"],["todos","Todos"]].map(([k,l]) => (
+          <button key={k} className={"recon-filter"+(filtro===k?" active":"")} onClick={() => setFiltro(k)}>{l}</button>
         ))}
       </div>
 
-      {/* 3 columnas */}
-      <div className="concil-cols">
-        {cols.map(c => (
-          <div key={c.label} className="concil-col">
-            <div className="concil-col-hd">
-              <div className="concil-col-status">
-                <span className="concil-col-dot" style={{background:c.dot}}/>
-                {c.label}
-              </div>
-              <div className="concil-col-total">{fmt(sumTotal(c.items))}</div>
-              <div className="concil-col-count">{c.items.length} factura{c.items.length!==1?"s":""}</div>
+      {/* Import zone if no data */}
+      {!cargando && movimientos.length === 0 && (
+        <div className={"import-zone"+(drag?" drag":"")}
+          onDragOver={e=>{e.preventDefault();setDrag(true)}}
+          onDragLeave={()=>setDrag(false)}
+          onDrop={e=>{e.preventDefault();setDrag(false);const f=e.dataTransfer.files[0];if(f)importarExcel(f);}}
+          onClick={() => fileRef.current.click()}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#9C8E7A" strokeWidth={1.4} style={{ width:48,height:48,margin:"0 auto 16px",display:"block" }}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <p style={{ fontSize:18,color:"#2C2417",marginBottom:8 }}>Importa tu extracto bancario</p>
+          <p style={{ fontSize:14,color:"#9C8E7A",marginBottom:16 }}>Arrastra el archivo Excel aquí o haz clic para seleccionarlo</p>
+          <p style={{ fontSize:11,color:"#D4C5A9",letterSpacing:".2em",textTransform:"uppercase" }}>xlsx · xls · csv</p>
+        </div>
+      )}
+
+      {cargando && <div className="loading-row"><span className="spin"/><span>Cargando movimientos...</span></div>}
+
+      {/* Two-panel layout */}
+      {!cargando && movimientos.length > 0 && (
+        <div className="recon-layout">
+
+          {/* Left: movements list */}
+          <div className="recon-panel">
+            <div className="recon-ph">
+              <span>Movimientos</span>
+              <span style={{ color:"#9C8E7A" }}>{movsVisibles.length}</span>
             </div>
-            {c.items.length === 0
-              ? <div style={{padding:"24px 18px",fontSize:13,color:"#9C8E7A",fontStyle:"italic"}}>Sin registros</div>
-              : c.items.map(f => <CCard key={f.id} f={f}/>)
+            {movsVisibles.length === 0
+              ? <div className="recon-empty">Sin movimientos en este filtro</div>
+              : (
+                <div className="recon-list">
+                  {movsVisibles.map(m => {
+                    const imp   = Number(m.importe);
+                    const isSel = selMov === m.id;
+                    return (
+                      <div key={m.id}
+                        className={`recon-mov${isSel?" sel":""}${m.estado==="confirmado"?" matched":""}${m.estado==="excluido"?" excluido":""}`}
+                        onClick={() => setSelMov(isSel ? null : m.id)}>
+                        <div style={{ display:"flex",gap:6,alignItems:"flex-start" }}>
+                          {estadoDot(m.estado)}
+                          <div style={{ flex:1,minWidth:0 }}>
+                            <div className="recon-mov-top">
+                              <span className="recon-mov-concepto" title={m.concepto}>{m.concepto || m.observaciones || "Sin concepto"}</span>
+                              <span className="recon-mov-importe" style={{ color:imp>=0?"#3A6B3E":"#8B3A2A" }}>{imp>=0?"+":""}{fmt(imp)}</span>
+                            </div>
+                            <div className="recon-mov-meta">
+                              <span>{m.fecha}</span>
+                              {m.estado==="confirmado" && <span style={{ color:"#7BAE7F" }}>✓ Confirmado</span>}
+                              {m.estado==="excluido"   && <span>Excluido</span>}
+                              {m.confianza             && confBadge(m.confianza)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
             }
           </div>
-        ))}
-      </div>
+
+          {/* Right: detail + suggestions */}
+          <div className="recon-panel">
+            {!selectedMov
+              ? (
+                <div className="recon-empty" style={{ padding:"80px 24px" }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#D4C5A9" strokeWidth={1.2} style={{ width:48,height:48,margin:"0 auto 16px",display:"block" }}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75l-2.489-2.489m0 0a3.375 3.375 0 10-4.773-4.773 3.375 3.375 0 004.774 4.774zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  Selecciona un movimiento para ver las facturas sugeridas
+                </div>
+              )
+              : (
+                <>
+                  {/* Detail header */}
+                  <div className="recon-detail-hd">
+                    <div className="recon-detail-concepto">{selectedMov.concepto || selectedMov.observaciones || "Sin concepto"}</div>
+                    <div className="recon-detail-meta">
+                      <span>{selectedMov.fecha}</span>
+                      {selectedMov.movimiento && <span>{selectedMov.movimiento}</span>}
+                      {selectedMov.observaciones && selectedMov.concepto && <span style={{ fontStyle:"italic",opacity:.7 }}>{selectedMov.observaciones}</span>}
+                    </div>
+                    <div className="recon-detail-importe" style={{ color:Number(selectedMov.importe)>=0?"#3A6B3E":"#8B3A2A" }}>
+                      {Number(selectedMov.importe)>=0?"+":""}{fmt(Number(selectedMov.importe))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="recon-acts">
+                    {selectedMov.estado === "pendiente" && (
+                      <button className="btn-sm" onClick={() => excluir(selectedMov.id)}>Excluir</button>
+                    )}
+                    {(selectedMov.estado === "confirmado" || selectedMov.estado === "excluido") && (
+                      <button className="btn-sm" onClick={() => deshacer(selectedMov.id)}>Deshacer</button>
+                    )}
+                  </div>
+
+                  {/* Suggestions */}
+                  <div className="recon-sug-list-hd">
+                    {selectedMov.estado === "confirmado"
+                      ? "Factura vinculada"
+                      : sugs.length > 0
+                        ? `${sugs.length} factura${sugs.length!==1?"s":""} sugerida${sugs.length!==1?"s":""}`
+                        : "Sin coincidencias"
+                    }
+                  </div>
+
+                  {selectedMov.estado === "confirmado"
+                    ? (() => {
+                        const linked = ingresos.find(f => f.id === selectedMov.factura_id);
+                        if (!linked) return <div className="recon-empty">Factura no encontrada</div>;
+                        return (
+                          <div className="recon-sug" style={{ background:"#F0F7F0",cursor:"default" }}>
+                            <div className="recon-sug-top">
+                              <span className="recon-sug-nombre">{linked.proveedor || linked.concepto || "—"}</span>
+                              <span className="recon-sug-importe">{fmt(linked.total)}</span>
+                              {confBadge(selectedMov.confianza || 0)}
+                            </div>
+                            <div className="recon-sug-meta">{linked.fecha}{linked.numero_factura ? ` · Nº ${linked.numero_factura}` : ""}{linked.concepto ? ` · ${linked.concepto}` : ""}</div>
+                          </div>
+                        );
+                      })()
+                    : sugs.length === 0
+                      ? <div className="recon-empty" style={{ padding:"32px 24px" }}>No se encontraron facturas de ingresos que coincidan con este movimiento</div>
+                      : sugs.map(({ f, conf }) => (
+                          <div key={f.id} className="recon-sug" onClick={() => confirmar(selectedMov.id, f.id, conf)}>
+                            <div className="recon-sug-top">
+                              <span className="recon-sug-nombre">{f.proveedor || f.concepto || "—"}</span>
+                              <span className="recon-sug-importe">{fmt(f.total)}</span>
+                              {confBadge(conf)}
+                            </div>
+                            <div className="recon-sug-meta">{f.fecha}{f.numero_factura ? ` · Nº ${f.numero_factura}` : ""}{f.concepto ? ` · ${f.concepto}` : ""}</div>
+                          </div>
+                        ))
+                  }
+                </>
+              )
+            }
+          </div>
+        </div>
+      )}
     </div>
   );
 }
