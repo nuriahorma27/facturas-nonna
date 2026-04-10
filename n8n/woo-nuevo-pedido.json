@@ -19,7 +19,7 @@
       "position": [460, 300],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const b=$input.first().json?.body??$input.first().json;\nconst o=b.id?b:(b.order??b);\nif(!o.id) throw new Error('Payload sin id de pedido');\n\nconst SUPA='https://jtqfxakabthzakmhncrw.supabase.co/rest/v1/pedidos_woo';\nconst KEY='sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p';\n\nconst row={\n  woo_id: o.id,\n  numero: String(o.number),\n  fecha: (o.date_paid||o.date_created||'').slice(0,10)||null,\n  cliente_nombre: ((o.billing?.first_name||'')+' '+(o.billing?.last_name||'')).trim(),\n  cliente_email: o.billing?.email||'',\n  total: parseFloat(o.total)||0,\n  estado: o.status,\n  lineas: (o.line_items||[]).map(li=>li.name).join(', ')\n};\n\nconst hdrs={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};\nconst res=await fetch(SUPA+'?on_conflict=woo_id',{method:'POST',headers:hdrs,body:JSON.stringify([row])});\nif(!res.ok) throw new Error('Supabase: '+await res.text());\n\nreturn [{json:{success:true,woo_id:row.woo_id,numero:row.numero,cliente:row.cliente_nombre}}];"
+        "jsCode": "try {\nconst b=$input.first().json?.body??$input.first().json;\nconst o=b.id?b:(b.order??b);\nif(!o.id) throw new Error('Payload sin id de pedido');\n\nconst SUPA='https://jtqfxakabthzakmhncrw.supabase.co/rest/v1/pedidos_woo';\nconst KEY='sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p';\n\nconst row={\n  woo_id:o.id,\n  numero:String(o.number),\n  fecha:(o.date_paid||o.date_created||'').slice(0,10)||null,\n  cliente_nombre:((o.billing?.first_name||'')+' '+(o.billing?.last_name||'')).trim(),\n  cliente_email:o.billing?.email||'',\n  total:parseFloat(o.total)||0,\n  estado:o.status,\n  lineas:(o.line_items||[]).map(li=>li.name).join(', ')\n};\n\nawait $helpers.httpRequest({\n  method:'POST',\n  url:SUPA+'?on_conflict=woo_id',\n  headers:{\n    'apikey':KEY,\n    'Authorization':'Bearer '+KEY,\n    'Content-Type':'application/json',\n    'Prefer':'resolution=merge-duplicates'\n  },\n  body:[row],\n  json:true\n});\n\nreturn [{json:{success:true,woo_id:row.woo_id,numero:row.numero,cliente:row.cliente_nombre}}];\n} catch(err) {\n  return [{json:{success:false,error:err.message}}];\n}"
       }
     },
     {
@@ -34,8 +34,8 @@
     }
   ],
   "connections": {
-    "Webhook WooCommerce":       { "main": [[{ "node": "Guardar pedido en Supabase", "type": "main", "index": 0 }]] },
-    "Guardar pedido en Supabase":{ "main": [[{ "node": "Responder",                  "type": "main", "index": 0 }]] }
+    "Webhook WooCommerce":        { "main": [[{ "node": "Guardar pedido en Supabase", "type": "main", "index": 0 }]] },
+    "Guardar pedido en Supabase": { "main": [[{ "node": "Responder",                  "type": "main", "index": 0 }]] }
   },
   "active": true,
   "settings": { "executionOrder": "v1" },
