@@ -1869,11 +1869,11 @@ function ViewConciliacion({ facturas, toast }) {
 
   const getSugs = useCallback((mov) => {
     if (!mov) return [];
+    // Mostrar todos los ingresos sin conciliar, ordenados por confianza
     return ingresos
+      .filter(f => f.conciliacion !== "verificado")
       .map(f => ({ f, conf: getConfianza(mov, f) }))
-      .filter(({ conf }) => conf >= 30)
-      .sort((a, b) => b.conf - a.conf)
-      .slice(0, 6);
+      .sort((a, b) => b.conf - a.conf);
   }, [ingresos]);
 
   // ── Acciones ─────────────────────────────────────────────────
@@ -2065,8 +2065,8 @@ function ViewConciliacion({ facturas, toast }) {
                     {selectedMov.estado === "confirmado"
                       ? "Factura vinculada"
                       : sugs.length > 0
-                        ? `${sugs.length} factura${sugs.length!==1?"s":""} sugerida${sugs.length!==1?"s":""}`
-                        : "Sin coincidencias"
+                        ? `${sugs.length} ingreso${sugs.length!==1?"s":""} disponible${sugs.length!==1?"s":""} — haz clic para vincular`
+                        : "Sin ingresos pendientes"
                     }
                   </div>
 
@@ -2086,7 +2086,7 @@ function ViewConciliacion({ facturas, toast }) {
                         );
                       })()
                     : sugs.length === 0
-                      ? <div className="recon-empty" style={{ padding:"32px 24px" }}>No se encontraron facturas de ingresos que coincidan con este movimiento</div>
+                      ? <div className="recon-empty" style={{ padding:"32px 24px" }}>No hay ingresos pendientes de conciliar</div>
                       : sugs.map(({ f, conf }) => (
                           <div key={f.id} className="recon-sug" onClick={() => confirmar(selectedMov.id, f.id, conf)}>
                             <div className="recon-sug-top">
