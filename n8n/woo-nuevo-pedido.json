@@ -1,0 +1,43 @@
+{
+  "name": "WooCommerce - Nuevo pedido (webhook tiempo real)",
+  "nodes": [
+    {
+      "id": "wp1", "name": "Webhook WooCommerce",
+      "type": "n8n-nodes-base.webhook", "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "woo-nuevo-pedido",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "woo-nuevo-pedido"
+    },
+    {
+      "id": "wp2", "name": "Guardar pedido en Supabase",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b=$input.first().json?.body??$input.first().json;\nconst o=b.id?b:(b.order??b);\nif(!o.id) throw new Error('Payload sin id de pedido');\n\nconst SUPA='https://jtqfxakabthzakmhncrw.supabase.co/rest/v1/pedidos_woo';\nconst KEY='sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p';\n\nconst row={\n  woo_id: o.id,\n  numero: String(o.number),\n  fecha: (o.date_paid||o.date_created||'').slice(0,10)||null,\n  cliente_nombre: ((o.billing?.first_name||'')+' '+(o.billing?.last_name||'')).trim(),\n  cliente_email: o.billing?.email||'',\n  total: parseFloat(o.total)||0,\n  estado: o.status,\n  lineas: (o.line_items||[]).map(li=>li.name).join(', ')\n};\n\nconst hdrs={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};\nconst res=await fetch(SUPA+'?on_conflict=woo_id',{method:'POST',headers:hdrs,body:JSON.stringify([row])});\nif(!res.ok) throw new Error('Supabase: '+await res.text());\n\nreturn [{json:{success:true,woo_id:row.woo_id,numero:row.numero,cliente:row.cliente_nombre}}];"
+      }
+    },
+    {
+      "id": "wp3", "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1,
+      "position": [700, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook WooCommerce":       { "main": [[{ "node": "Guardar pedido en Supabase", "type": "main", "index": 0 }]] },
+    "Guardar pedido en Supabase":{ "main": [[{ "node": "Responder",                  "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": []
+}

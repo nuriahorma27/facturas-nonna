@@ -1,0 +1,43 @@
+{
+  "name": "WooCommerce - Sync masivo pedidos",
+  "nodes": [
+    {
+      "id": "ws1", "name": "Webhook",
+      "type": "n8n-nodes-base.webhook", "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "woo-sync-pedidos",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "woo-sync-pedidos"
+    },
+    {
+      "id": "ws2", "name": "Obtener y guardar pedidos",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const CK='ck_e5baa5ce61b37009731cdaaac1c6509996c47754';\nconst CS='cs_f1e5dcd8da0d11fafe5b546ead0f76eaf4063d2a';\nconst BASE='https://www.atelierlanonna.com/wp-json/wc/v3/orders';\nconst SUPA='https://jtqfxakabthzakmhncrw.supabase.co/rest/v1/pedidos_woo';\nconst KEY='sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p';\n\n// 1. Paginar WooCommerce\nlet page=1, all=[];\nwhile(true){\n  const r=await fetch(`${BASE}?consumer_key=${CK}&consumer_secret=${CS}&per_page=100&page=${page}&status=any`);\n  if(!r.ok) throw new Error('WooCommerce '+r.status+': '+await r.text());\n  const data=await r.json();\n  if(!Array.isArray(data)||data.length===0) break;\n  all=all.concat(data);\n  if(data.length<100) break;\n  page++;\n}\n\n// 2. Transformar\nconst rows=all.map(o=>({\n  woo_id: o.id,\n  numero: String(o.number),\n  fecha: (o.date_paid||o.date_created||'').slice(0,10)||null,\n  cliente_nombre: ((o.billing?.first_name||'')+' '+(o.billing?.last_name||'')).trim(),\n  cliente_email: o.billing?.email||'',\n  total: parseFloat(o.total)||0,\n  estado: o.status,\n  lineas: (o.line_items||[]).map(li=>li.name).join(', ')\n}));\n\n// 3. Upsert en Supabase (lotes de 100)\nconst hdrs={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};\nfor(let i=0;i<rows.length;i+=100){\n  const res=await fetch(SUPA+'?on_conflict=woo_id',{method:'POST',headers:hdrs,body:JSON.stringify(rows.slice(i,i+100))});\n  if(!res.ok) throw new Error('Supabase: '+await res.text());\n}\n\nreturn [{json:{success:true,total:rows.length,paginas:page-1}}];"
+      }
+    },
+    {
+      "id": "ws3", "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1,
+      "position": [700, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook":                    { "main": [[{ "node": "Obtener y guardar pedidos", "type": "main", "index": 0 }]] },
+    "Obtener y guardar pedidos":  { "main": [[{ "node": "Responder",                 "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": []
+}

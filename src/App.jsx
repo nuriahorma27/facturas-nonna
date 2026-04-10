@@ -19,8 +19,9 @@ const _sb = createClient(
 async function db() { return _sb; }
 
 // ── Google Drive via n8n ──────────────────────────────────────
-const N8N_UPLOAD_URL = "https://nuriahorma.app.n8n.cloud/webhook/facturas-drive-upload";
-const N8N_MOVE_URL   = "https://nuriahorma.app.n8n.cloud/webhook/facturas-drive-move";
+const N8N_UPLOAD_URL    = "https://nuriahorma.app.n8n.cloud/webhook/facturas-drive-upload";
+const N8N_MOVE_URL      = "https://nuriahorma.app.n8n.cloud/webhook/facturas-drive-move";
+const N8N_WOO_SYNC_URL  = "https://nuriahorma.app.n8n.cloud/webhook/woo-sync-pedidos";
 
 async function subirADrive(file, trimestre, anyo, tipo) {
   try {
@@ -1707,7 +1708,9 @@ const TRIM={T1:[0,1,2],T2:[3,4,5],T3:[6,7,8],T4:[9,10,11]};
 // ── Conciliación bancaria ─────────────────────────────────────
 function ViewConciliacion({ facturas, toast }) {
   const [movimientos, setMovimientos] = useState([]);
+  const [pedidos,     setPedidos]     = useState([]);
   const [cargando, setCargando]       = useState(true);
+  const [sincWoo, setSincWoo]         = useState(false);
   const [filtro, setFiltro]           = useState("pendiente");
   const [selMov, setSelMov]           = useState(null);
   const [drag, setDrag]               = useState(false);
@@ -1736,7 +1739,7 @@ function ViewConciliacion({ facturas, toast }) {
     return null;
   };
 
-  // ── Cargar movimientos de Supabase ───────────────────────────
+  // ── Cargar datos de Supabase ─────────────────────────────────
   const cargarMovimientos = useCallback(async () => {
     setCargando(true);
     try {
@@ -1748,7 +1751,32 @@ function ViewConciliacion({ facturas, toast }) {
     }
   }, []);
 
-  useEffect(() => { cargarMovimientos(); }, [cargarMovimientos]);
+  const cargarPedidos = useCallback(async () => {
+    try {
+      const supa = await db();
+      const { data } = await supa.from("pedidos_woo").select("*").order("fecha", { ascending: false });
+      setPedidos(data || []);
+    } catch(e) {}
+  }, []);
+
+  useEffect(() => { cargarMovimientos(); cargarPedidos(); }, [cargarMovimientos, cargarPedidos]);
+
+  // ── Sync WooCommerce ─────────────────────────────────────────
+  const sincronizarWoo = async () => {
+    setSincWoo(true);
+    try {
+      const res = await fetch(N8N_WOO_SYNC_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const d = await res.json();
+      if (d.success) {
+        toast({ type: "ok", msg: `${d.total} pedidos sincronizados` });
+        cargarPedidos();
+      } else throw new Error(d.error || "Error n8n");
+    } catch(e) {
+      toast({ type: "err", msg: "Error al sincronizar: " + e.message });
+    } finally {
+      setSincWoo(false);
+    }
+  };
 
   // ── Importar Excel ───────────────────────────────────────────
   const importarExcel = async (file) => {
@@ -1869,44 +1897,61 @@ function ViewConciliacion({ facturas, toast }) {
 
   const getSugs = useCallback((mov) => {
     if (!mov) return [];
-    const pendientes = ingresos.filter(f => f.conciliacion !== "verificado");
-
-    // Si la transferencia tiene nº de pedido → solo mostrar la factura con ese nº
     const orderMov = extractOrderNum(mov.concepto) || extractOrderNum(mov.observaciones);
+
     if (orderMov) {
-      const tier1 = pendientes
-        .filter(f => {
-          const o = extractOrderNum(f.concepto) || extractOrderNum(f.numero_factura) || extractOrderNum(f.proveedor_cliente);
-          return o === orderMov;
-        })
-        .map(f => ({ f, conf: getConfianza(mov, f) }))
-        .sort((a, b) => b.conf - a.conf);
-      return tier1; // vacío si no existe esa factura
+      // Buscar en pedidos_woo primero (fuente directa de WooCommerce)
+      const pedidoMatches = pedidos
+        .filter(p => p.conciliacion !== "verificado" && String(p.numero) === String(orderMov))
+        .map(p => ({ tipo: "pedido", item: p, conf: 95 }));
+      if (pedidoMatches.length > 0) return pedidoMatches;
+
+      // Fallback: buscar en facturas manuales con ese nº
+      const facturaMatches = ingresos
+        .filter(f => f.conciliacion !== "verificado" && (
+          extractOrderNum(f.concepto) === orderMov ||
+          extractOrderNum(f.numero_factura) === orderMov
+        ))
+        .map(f => ({ tipo: "factura", item: f, conf: getConfianza(mov, f) }));
+      return facturaMatches;
     }
 
-    // Sin nº de pedido → todas las pendientes ordenadas por confianza Tier 2
-    return pendientes
-      .map(f => ({ f, conf: getConfianza(mov, f) }))
+    // Sin nº de pedido → todos los ingresos pendientes ordenados por Tier 2
+    return ingresos
+      .filter(f => f.conciliacion !== "verificado")
+      .map(f => ({ tipo: "factura", item: f, conf: getConfianza(mov, f) }))
       .sort((a, b) => b.conf - a.conf);
-  }, [ingresos]);
+  }, [ingresos, pedidos]);
 
   // ── Acciones ─────────────────────────────────────────────────
   const confirmar = async (movId, facturaId, confianza) => {
     try {
       const supa = await db();
-      await supa.from("movimientos_banco").update({ estado: "confirmado", factura_id: facturaId, confianza }).eq("id", movId);
+      await supa.from("movimientos_banco").update({ estado: "confirmado", factura_id: facturaId, pedido_woo_id: null, confianza }).eq("id", movId);
       await supa.from("facturas").update({ conciliacion: "verificado" }).eq("id", facturaId);
-      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "confirmado", factura_id: facturaId, confianza } : m));
+      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "confirmado", factura_id: facturaId, pedido_woo_id: null, confianza } : m));
       setSelMov(null);
-      toast({ type: "ok", msg: "Movimiento confirmado" });
+      toast({ type: "ok", msg: "Vinculado con factura" });
+    } catch(e) { toast({ type: "err", msg: "Error: " + e.message }); }
+  };
+
+  const confirmarConPedido = async (movId, pedidoId, confianza) => {
+    try {
+      const supa = await db();
+      await supa.from("movimientos_banco").update({ estado: "confirmado", pedido_woo_id: pedidoId, factura_id: null, confianza }).eq("id", movId);
+      await supa.from("pedidos_woo").update({ conciliacion: "verificado", movimiento_id: movId }).eq("id", pedidoId);
+      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "confirmado", pedido_woo_id: pedidoId, factura_id: null, confianza } : m));
+      setPedidos(ps => ps.map(p => p.id === pedidoId ? { ...p, conciliacion: "verificado" } : p));
+      setSelMov(null);
+      toast({ type: "ok", msg: "Pedido confirmado" });
     } catch(e) { toast({ type: "err", msg: "Error: " + e.message }); }
   };
 
   const excluir = async (movId) => {
     try {
       const supa = await db();
-      await supa.from("movimientos_banco").update({ estado: "excluido", factura_id: null }).eq("id", movId);
-      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "excluido", factura_id: null } : m));
+      await supa.from("movimientos_banco").update({ estado: "excluido", factura_id: null, pedido_woo_id: null }).eq("id", movId);
+      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "excluido", factura_id: null, pedido_woo_id: null } : m));
       setSelMov(null);
       toast({ type: "ok", msg: "Movimiento excluido" });
     } catch(e) { toast({ type: "err", msg: "Error: " + e.message }); }
@@ -1916,9 +1961,11 @@ function ViewConciliacion({ facturas, toast }) {
     try {
       const supa = await db();
       const mov = movimientos.find(m => m.id === movId);
-      if (mov?.factura_id) await supa.from("facturas").update({ conciliacion: null }).eq("id", mov.factura_id);
-      await supa.from("movimientos_banco").update({ estado: "pendiente", factura_id: null, confianza: null }).eq("id", movId);
-      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "pendiente", factura_id: null, confianza: null } : m));
+      if (mov?.factura_id)    await supa.from("facturas").update({ conciliacion: null }).eq("id", mov.factura_id);
+      if (mov?.pedido_woo_id) await supa.from("pedidos_woo").update({ conciliacion: null, movimiento_id: null }).eq("id", mov.pedido_woo_id);
+      await supa.from("movimientos_banco").update({ estado: "pendiente", factura_id: null, pedido_woo_id: null, confianza: null }).eq("id", movId);
+      setMovimientos(ms => ms.map(m => m.id === movId ? { ...m, estado: "pendiente", factura_id: null, pedido_woo_id: null, confianza: null } : m));
+      if (mov?.pedido_woo_id) setPedidos(ps => ps.map(p => p.id === mov.pedido_woo_id ? { ...p, conciliacion: null } : p));
       toast({ type: "ok", msg: "Deshecho" });
     } catch(e) { toast({ type: "err", msg: "Error: " + e.message }); }
   };
@@ -1969,6 +2016,10 @@ function ViewConciliacion({ facturas, toast }) {
           <button className="btn-out" onClick={() => fileRef.current.click()}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ width:16,height:16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
             <span>Importar extracto</span>
+          </button>
+          <button className="btn-ink" onClick={sincronizarWoo} disabled={sincWoo}>
+            {sincWoo ? <span className="spin"/> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{ width:16,height:16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>}
+            <span>{sincWoo ? "Sincronizando..." : `Sync WooCommerce${pedidos.length ? ` (${pedidos.length})` : ""}`}</span>
           </button>
         </div>
       </div>
@@ -2074,19 +2125,36 @@ function ViewConciliacion({ facturas, toast }) {
                     )}
                   </div>
 
-                  {/* Suggestions */}
+                  {/* Suggestions header */}
                   {(() => {
                     const orderMov = extractOrderNum(selectedMov.concepto) || extractOrderNum(selectedMov.observaciones);
                     let hd;
-                    if (selectedMov.estado === "confirmado") hd = "Factura vinculada";
-                    else if (sugs.length > 0) hd = `${sugs.length} ingreso${sugs.length!==1?"s":""} — haz clic para vincular`;
-                    else if (orderMov) hd = `Pedido ${orderMov} — no encontrado en facturas`;
-                    else hd = "Sin ingresos pendientes";
+                    if (selectedMov.estado === "confirmado")   hd = "Vinculado";
+                    else if (sugs.length > 0)                  hd = `${sugs.length} coincidencia${sugs.length!==1?"s":""} — haz clic para vincular`;
+                    else if (orderMov)                         hd = `Pedido #${orderMov} no encontrado en WooCommerce`;
+                    else                                       hd = "Sin ingresos pendientes";
                     return <div className="recon-sug-list-hd">{hd}</div>;
                   })()}
 
                   {selectedMov.estado === "confirmado"
                     ? (() => {
+                        // Linked to a WooCommerce order
+                        if (selectedMov.pedido_woo_id) {
+                          const ped = pedidos.find(p => p.id === selectedMov.pedido_woo_id);
+                          if (!ped) return <div className="recon-empty">Pedido no encontrado</div>;
+                          return (
+                            <div className="recon-sug" style={{ background:"#F0F7F0",cursor:"default" }}>
+                              <div className="recon-sug-top">
+                                <span style={{ fontSize:10,letterSpacing:".15em",textTransform:"uppercase",color:"#8B6914",marginRight:4 }}>WOO</span>
+                                <span className="recon-sug-nombre">{ped.cliente_nombre || "—"}</span>
+                                <span className="recon-sug-importe">{fmt(ped.total)}</span>
+                                {confBadge(selectedMov.confianza || 0)}
+                              </div>
+                              <div className="recon-sug-meta">Pedido #{ped.numero} · {ped.fecha} · {ped.estado}{ped.lineas ? ` · ${ped.lineas.slice(0,60)}` : ""}</div>
+                            </div>
+                          );
+                        }
+                        // Linked to a manual factura
                         const linked = ingresos.find(f => f.id === selectedMov.factura_id);
                         if (!linked) return <div className="recon-empty">Factura no encontrada</div>;
                         return (
@@ -2104,19 +2172,31 @@ function ViewConciliacion({ facturas, toast }) {
                       ? (() => {
                           const orderMov2 = extractOrderNum(selectedMov.concepto) || extractOrderNum(selectedMov.observaciones);
                           return <div className="recon-empty" style={{ padding:"32px 24px" }}>
-                            {orderMov2 ? `No se encontró ninguna factura de ingreso con el pedido ${orderMov2}` : "No hay ingresos pendientes de conciliar"}
+                            {orderMov2 ? `Pedido #${orderMov2} no encontrado. Prueba a sincronizar WooCommerce.` : "No hay ingresos pendientes de conciliar"}
                           </div>;
                         })()
-                      : sugs.map(({ f, conf }) => (
-                          <div key={f.id} className="recon-sug" onClick={() => confirmar(selectedMov.id, f.id, conf)}>
-                            <div className="recon-sug-top">
-                              <span className="recon-sug-nombre">{f.proveedor || f.concepto || "—"}</span>
-                              <span className="recon-sug-importe">{fmt(f.total)}</span>
-                              {confBadge(conf)}
+                      : sugs.map(({ tipo, item, conf }) => tipo === "pedido"
+                          ? (
+                            <div key={item.id} className="recon-sug" onClick={() => confirmarConPedido(selectedMov.id, item.id, conf)}>
+                              <div className="recon-sug-top">
+                                <span style={{ fontSize:10,letterSpacing:".15em",textTransform:"uppercase",color:"#8B6914",flexShrink:0 }}>WOO</span>
+                                <span className="recon-sug-nombre">{item.cliente_nombre || "—"}</span>
+                                <span className="recon-sug-importe">{fmt(item.total)}</span>
+                                {confBadge(conf)}
+                              </div>
+                              <div className="recon-sug-meta">Pedido #{item.numero} · {item.fecha} · {item.estado}{item.lineas ? ` · ${item.lineas.slice(0,60)}` : ""}</div>
                             </div>
-                            <div className="recon-sug-meta">{f.fecha}{f.numero_factura ? ` · Nº ${f.numero_factura}` : ""}{f.concepto ? ` · ${f.concepto}` : ""}</div>
-                          </div>
-                        ))
+                          ) : (
+                            <div key={item.id} className="recon-sug" onClick={() => confirmar(selectedMov.id, item.id, conf)}>
+                              <div className="recon-sug-top">
+                                <span className="recon-sug-nombre">{item.proveedor || item.concepto || "—"}</span>
+                                <span className="recon-sug-importe">{fmt(item.total)}</span>
+                                {confBadge(conf)}
+                              </div>
+                              <div className="recon-sug-meta">{item.fecha}{item.numero_factura ? ` · Nº ${item.numero_factura}` : ""}{item.concepto ? ` · ${item.concepto}` : ""}</div>
+                            </div>
+                          )
+                        )
                   }
                 </>
               )
