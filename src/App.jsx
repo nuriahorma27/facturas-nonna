@@ -1869,9 +1869,23 @@ function ViewConciliacion({ facturas, toast }) {
 
   const getSugs = useCallback((mov) => {
     if (!mov) return [];
-    // Mostrar todos los ingresos sin conciliar, ordenados por confianza
-    return ingresos
-      .filter(f => f.conciliacion !== "verificado")
+    const pendientes = ingresos.filter(f => f.conciliacion !== "verificado");
+
+    // Si la transferencia tiene nº de pedido → solo mostrar la factura con ese nº
+    const orderMov = extractOrderNum(mov.concepto) || extractOrderNum(mov.observaciones);
+    if (orderMov) {
+      const tier1 = pendientes
+        .filter(f => {
+          const o = extractOrderNum(f.concepto) || extractOrderNum(f.numero_factura) || extractOrderNum(f.proveedor_cliente);
+          return o === orderMov;
+        })
+        .map(f => ({ f, conf: getConfianza(mov, f) }))
+        .sort((a, b) => b.conf - a.conf);
+      return tier1; // vacío si no existe esa factura
+    }
+
+    // Sin nº de pedido → todas las pendientes ordenadas por confianza Tier 2
+    return pendientes
       .map(f => ({ f, conf: getConfianza(mov, f) }))
       .sort((a, b) => b.conf - a.conf);
   }, [ingresos]);
@@ -2061,14 +2075,15 @@ function ViewConciliacion({ facturas, toast }) {
                   </div>
 
                   {/* Suggestions */}
-                  <div className="recon-sug-list-hd">
-                    {selectedMov.estado === "confirmado"
-                      ? "Factura vinculada"
-                      : sugs.length > 0
-                        ? `${sugs.length} ingreso${sugs.length!==1?"s":""} disponible${sugs.length!==1?"s":""} — haz clic para vincular`
-                        : "Sin ingresos pendientes"
-                    }
-                  </div>
+                  {(() => {
+                    const orderMov = extractOrderNum(selectedMov.concepto) || extractOrderNum(selectedMov.observaciones);
+                    let hd;
+                    if (selectedMov.estado === "confirmado") hd = "Factura vinculada";
+                    else if (sugs.length > 0) hd = `${sugs.length} ingreso${sugs.length!==1?"s":""} — haz clic para vincular`;
+                    else if (orderMov) hd = `Pedido ${orderMov} — no encontrado en facturas`;
+                    else hd = "Sin ingresos pendientes";
+                    return <div className="recon-sug-list-hd">{hd}</div>;
+                  })()}
 
                   {selectedMov.estado === "confirmado"
                     ? (() => {
@@ -2086,7 +2101,12 @@ function ViewConciliacion({ facturas, toast }) {
                         );
                       })()
                     : sugs.length === 0
-                      ? <div className="recon-empty" style={{ padding:"32px 24px" }}>No hay ingresos pendientes de conciliar</div>
+                      ? (() => {
+                          const orderMov2 = extractOrderNum(selectedMov.concepto) || extractOrderNum(selectedMov.observaciones);
+                          return <div className="recon-empty" style={{ padding:"32px 24px" }}>
+                            {orderMov2 ? `No se encontró ninguna factura de ingreso con el pedido ${orderMov2}` : "No hay ingresos pendientes de conciliar"}
+                          </div>;
+                        })()
                       : sugs.map(({ f, conf }) => (
                           <div key={f.id} className="recon-sug" onClick={() => confirmar(selectedMov.id, f.id, conf)}>
                             <div className="recon-sug-top">
