@@ -1766,13 +1766,20 @@ function ViewConciliacion({ facturas, toast }) {
     setSincWoo(true);
     try {
       const res = await fetch(N8N_WOO_SYNC_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-      const d = await res.json();
+      if (!res.ok) {
+        throw new Error(`El workflow devolvió ${res.status}. ¿Está activado en n8n?`);
+      }
+      const text = await res.text();
+      if (!text || !text.trim()) {
+        throw new Error("Respuesta vacía — activa el workflow en n8n antes de sincronizar");
+      }
+      const d = JSON.parse(text);
       if (d.success) {
-        toast({ type: "ok", msg: `${d.total} pedidos sincronizados` });
+        toast({ type: "ok", msg: `${d.total} pedidos de ${d.anyo || new Date().getFullYear()} sincronizados` });
         cargarPedidos();
-      } else throw new Error(d.error || "Error n8n");
+      } else throw new Error(d.error || "Error en n8n");
     } catch(e) {
-      toast({ type: "err", msg: "Error al sincronizar: " + e.message });
+      toast({ type: "err", msg: e.message });
     } finally {
       setSincWoo(false);
     }
