@@ -2827,7 +2827,12 @@ export default function AtelierApp() {
 
   if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
 
-  const showToast = useCallback((msg, type="ok")=>{ setToast({msg,type}); setTimeout(()=>setToast(null),3500); },[]);
+  const showToast = useCallback((msgOrObj, type="ok")=>{
+    const msg = typeof msgOrObj === "object" ? msgOrObj.msg : msgOrObj;
+    const t   = typeof msgOrObj === "object" ? (msgOrObj.type || "ok") : type;
+    setToast({msg, type: t});
+    setTimeout(()=>setToast(null), 3500);
+  },[]);
 
   const cargar = useCallback(async()=>{
     setLoading(true);
