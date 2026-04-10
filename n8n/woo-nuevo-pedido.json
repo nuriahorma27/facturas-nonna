@@ -4,7 +4,7 @@
     {
       "id": "wp1", "name": "Webhook WooCommerce",
       "type": "n8n-nodes-base.webhook", "typeVersion": 2,
-      "position": [240, 300],
+      "position": [200, 300],
       "parameters": {
         "httpMethod": "POST",
         "path": "woo-nuevo-pedido",
@@ -14,28 +14,53 @@
       "webhookId": "woo-nuevo-pedido"
     },
     {
-      "id": "wp2", "name": "Guardar pedido en Supabase",
+      "id": "wp2", "name": "Transformar pedido",
       "type": "n8n-nodes-base.code", "typeVersion": 2,
-      "position": [460, 300],
+      "position": [420, 300],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "try {\nconst b=$input.first().json?.body??$input.first().json;\nconst o=b.id?b:(b.order??b);\nif(!o.id) throw new Error('Payload sin id de pedido');\n\nconst SUPA='https://jtqfxakabthzakmhncrw.supabase.co/rest/v1/pedidos_woo';\nconst KEY='sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p';\n\nconst row={\n  woo_id:o.id,\n  numero:String(o.number),\n  fecha:(o.date_paid||o.date_created||'').slice(0,10)||null,\n  cliente_nombre:((o.billing?.first_name||'')+' '+(o.billing?.last_name||'')).trim(),\n  cliente_email:o.billing?.email||'',\n  total:parseFloat(o.total)||0,\n  estado:o.status,\n  lineas:(o.line_items||[]).map(li=>li.name).join(', ')\n};\n\nawait $helpers.httpRequest({\n  method:'POST',\n  url:SUPA+'?on_conflict=woo_id',\n  headers:{\n    'apikey':KEY,\n    'Authorization':'Bearer '+KEY,\n    'Content-Type':'application/json',\n    'Prefer':'resolution=merge-duplicates'\n  },\n  body:[row],\n  json:true\n});\n\nreturn [{json:{success:true,woo_id:row.woo_id,numero:row.numero,cliente:row.cliente_nombre}}];\n} catch(err) {\n  return [{json:{success:false,error:err.message}}];\n}"
+        "jsCode": "const b = $input.first().json?.body ?? $input.first().json;\nconst o = b.id ? b : (b.order ?? b);\nif (!o.id) throw new Error('Payload sin id de pedido');\nconst row = {\n  woo_id: o.id,\n  numero: String(o.number),\n  fecha: (o.date_paid||o.date_created||'').slice(0,10)||null,\n  cliente_nombre: ((o.billing?.first_name||'')+' '+(o.billing?.last_name||'')).trim(),\n  cliente_email: o.billing?.email||'',\n  total: parseFloat(o.total)||0,\n  estado: o.status,\n  lineas: (o.line_items||[]).map(li=>li.name).join(', ')\n};\nreturn [{ json: { row_json: JSON.stringify([row]), woo_id: row.woo_id, numero: row.numero, cliente: row.cliente_nombre } }];"
       }
     },
     {
-      "id": "wp3", "name": "Responder",
+      "id": "wp3", "name": "Guardar en Supabase",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.1,
+      "position": [640, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jtqfxakabthzakmhncrw.supabase.co/rest/v1/pedidos_woo?on_conflict=woo_id",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "resolution=merge-duplicates" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.row_json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "wp4", "name": "Responder",
       "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1,
-      "position": [700, 300],
+      "position": [860, 300],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify($json) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, woo_id: $('Transformar pedido').item.json.woo_id, numero: $('Transformar pedido').item.json.numero, cliente: $('Transformar pedido').item.json.cliente }) }}",
         "options": {}
       }
     }
   ],
   "connections": {
-    "Webhook WooCommerce":        { "main": [[{ "node": "Guardar pedido en Supabase", "type": "main", "index": 0 }]] },
-    "Guardar pedido en Supabase": { "main": [[{ "node": "Responder",                  "type": "main", "index": 0 }]] }
+    "Webhook WooCommerce": { "main": [[{ "node": "Transformar pedido",  "type": "main", "index": 0 }]] },
+    "Transformar pedido":  { "main": [[{ "node": "Guardar en Supabase", "type": "main", "index": 0 }]] },
+    "Guardar en Supabase": { "main": [[{ "node": "Responder",           "type": "main", "index": 0 }]] }
   },
   "active": true,
   "settings": { "executionOrder": "v1" },
