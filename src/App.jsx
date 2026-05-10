@@ -2767,7 +2767,7 @@ const LOGIN_CSS = `
 .login-err{font-size:14px;color:#8B3A2A;font-style:italic;text-align:center;margin-bottom:14px;min-height:20px}
 `;
 
-const PASS = "nonna2025";
+const PASS = "Jh140157.";
 
 function LoginScreen({ onLogin }) {
   const [pwd, setPwd] = useState("");
