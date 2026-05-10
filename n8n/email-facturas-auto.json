@@ -1,0 +1,181 @@
+{
+  "name": "Facturas - Email automático",
+  "nodes": [
+    {
+      "id": "em1", "name": "Gmail - Nuevos emails",
+      "type": "n8n-nodes-base.gmailTrigger", "typeVersion": 1,
+      "position": [200, 300],
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "filters": {},
+        "downloadAttachments": true,
+        "options": {}
+      },
+      "credentials": { "gmailOAuth2": { "id": "", "name": "Gmail" } }
+    },
+    {
+      "id": "em2", "name": "Extraer adjunto",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [420, 300],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst binary = item.binary || {};\nconst keys = Object.keys(binary);\nconst VALID_TYPES = ['application/pdf','image/jpeg','image/jpg','image/png','image/webp'];\nconst attKey = keys.find(k => VALID_TYPES.includes((binary[k].mimeType || '').toLowerCase()));\nif (!attKey) return [{ json: { hasAttachment: false } }];\nconst att = binary[attKey];\nconst mime = att.mimeType.toLowerCase();\nreturn [{ json: {\n  hasAttachment: true,\n  fileBase64: att.data,\n  mimeType: mime,\n  fileName: att.fileName || ('factura_' + Date.now() + (mime.includes('pdf') ? '.pdf' : '.jpg')),\n  subject: item.json.subject || '',\n  from: item.json.from || ''\n} }];"
+      }
+    },
+    {
+      "id": "em3", "name": "¿Adjunto válido?",
+      "type": "n8n-nodes-base.if", "typeVersion": 2,
+      "position": [640, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{ "id": "c1", "leftValue": "={{ $json.hasAttachment }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "em4", "name": "Preparar clasificación",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [860, 160],
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst isPdf = d.mimeType.includes('pdf');\nconst contentBlock = isPdf\n  ? { type: 'document', source: { type: 'base64', media_type: d.mimeType, data: d.fileBase64 } }\n  : { type: 'image',    source: { type: 'base64', media_type: d.mimeType, data: d.fileBase64 } };\nconst body = JSON.stringify({\n  model: 'claude-opus-4-5',\n  max_tokens: 10,\n  messages: [{\n    role: 'user',\n    content: [\n      contentBlock,\n      { type: 'text', text: 'Analiza este documento. ¿Es una FACTURA (tiene número de factura, importe, IVA, datos del emisor)? Responde ÚNICAMENTE con una palabra: factura o no.' }\n    ]\n  }]\n});\nreturn [{ json: { ...d, claudeBody: body } }];"
+      }
+    },
+    {
+      "id": "em5", "name": "Clasificar con Claude",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.1,
+      "position": [1080, 160],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",           "value": "YOUR_ANTHROPIC_API_KEY" },
+            { "name": "anthropic-version",    "value": "2023-06-01" },
+            { "name": "Content-Type",         "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ $json.claudeBody }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "em6", "name": "¿Es factura?",
+      "type": "n8n-nodes-base.if", "typeVersion": 2,
+      "position": [1300, 160],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [{ "id": "c2", "leftValue": "={{ $json.content[0].text.toLowerCase().trim() }}", "rightValue": "factura", "operator": { "type": "string", "operation": "equals" } }],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "em7", "name": "Preparar extracción",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [1520, 60],
+      "parameters": {
+        "jsCode": "const d = $('Extraer adjunto').first().json;\nconst isPdf = d.mimeType.includes('pdf');\nconst contentBlock = isPdf\n  ? { type: 'document', source: { type: 'base64', media_type: d.mimeType, data: d.fileBase64 } }\n  : { type: 'image',    source: { type: 'base64', media_type: d.mimeType, data: d.fileBase64 } };\nconst prompt = 'Extrae los datos de esta factura y devuelve SOLO un JSON válido (sin markdown, sin texto extra) con exactamente estos campos:\\n{\\n  \"tipo\": \"gasto\",\\n  \"fecha\": \"DD/MM/YYYY\",\\n  \"numero_factura\": \"\",\\n  \"proveedor_cliente\": \"\",\\n  \"nif_cif\": \"\",\\n  \"concepto\": \"\",\\n  \"base_imponible\": 0,\\n  \"iva_porcentaje\": 21,\\n  \"iva_importe\": 0,\\n  \"total\": 0,\\n  \"categoria\": \"Otros\",\\n  \"estado\": \"pendiente\"\\n}\\nCategorías válidas: Telas y materiales, Transporte y envíos, Marketing y publicidad, Equipamiento y maquinaria, Servicios externos, Nóminas, Alquiler, Suministros, Otros.\\nFecha siempre en formato DD/MM/YYYY. Si no encuentras un campo déjalo vacío o en 0.';\nconst body = JSON.stringify({\n  model: 'claude-opus-4-5',\n  max_tokens: 1024,\n  messages: [{ role: 'user', content: [ contentBlock, { type: 'text', text: prompt } ] }]\n});\nreturn [{ json: { ...d, claudeBody: body } }];"
+      }
+    },
+    {
+      "id": "em8", "name": "Extraer datos con Claude",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.1,
+      "position": [1740, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",        "value": "YOUR_ANTHROPIC_API_KEY" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type",      "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ $json.claudeBody }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "em9", "name": "Parsear y preparar Drive",
+      "type": "n8n-nodes-base.code", "typeVersion": 2,
+      "position": [1960, 60],
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst adj = $('Extraer adjunto').first().json;\nconst text = (resp.content[0].text || '').trim();\nlet datos;\ntry {\n  const match = text.match(/\\{[\\s\\S]*\\}/);\n  datos = JSON.parse(match ? match[0] : text);\n} catch(e) {\n  datos = { tipo:'gasto', fecha:'', numero_factura:'', proveedor_cliente:'', nif_cif:'', concepto:'', base_imponible:0, iva_porcentaje:21, iva_importe:0, total:0, categoria:'Otros', estado:'pendiente' };\n}\n// Calcular trimestre y año desde la fecha extraída\nlet trimestre = 'T' + Math.ceil(((new Date().getMonth()+1)/3));\nlet anyo = String(new Date().getFullYear());\nif (datos.fecha) {\n  const parts = datos.fecha.split('/');\n  if (parts.length === 3) {\n    const mes = parseInt(parts[1], 10);\n    trimestre = mes <= 3 ? 'T1' : mes <= 6 ? 'T2' : mes <= 9 ? 'T3' : 'T4';\n    anyo = parts[2] || anyo;\n  }\n}\nconst driveBody = JSON.stringify({\n  file:      adj.fileBase64,\n  nombre:    adj.fileName,\n  mimeType:  adj.mimeType,\n  trimestre,\n  anyo,\n  tipo:      'gasto'\n});\nreturn [{ json: { datos, adj, trimestre, anyo, driveBody } }];"
+      }
+    },
+    {
+      "id": "em10", "name": "Subir a Drive",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.1,
+      "position": [2180, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "https://nuriahorma.app.n8n.cloud/webhook/facturas-drive-upload",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ $json.driveBody }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "em11", "name": "Guardar en Supabase",
+      "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.1,
+      "position": [2400, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "https://jtqfxakabthzakmhncrw.supabase.co/rest/v1/facturas",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey",        "value": "sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2p" },
+            { "name": "Authorization", "value": "Bearer sb_publishable_Wr-dnT92OLrYWsqhTrr4mw_F88RdJ2b" },
+            { "name": "Content-Type",  "value": "application/json" },
+            { "name": "Prefer",        "value": "return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "={{ JSON.stringify({\n  tipo:               $json.datos.tipo || 'gasto',\n  fecha:              $json.datos.fecha || '',\n  numero_factura:     $json.datos.numero_factura || '',\n  proveedor_cliente:  $json.datos.proveedor_cliente || '',\n  nif_cif:            $json.datos.nif_cif || '',\n  concepto:           $json.datos.concepto || '',\n  base_imponible:     Number($json.datos.base_imponible) || 0,\n  iva_porcentaje:     Number($json.datos.iva_porcentaje) || 21,\n  iva_importe:        Number($json.datos.iva_importe) || 0,\n  total:              Number($json.datos.total) || 0,\n  categoria:          $json.datos.categoria || 'Otros',\n  estado:             'pendiente',\n  archivo_nombre:     $json.adj.fileName,\n  archivo_tipo:       $json.adj.mimeType.includes('pdf') ? 'pdf' : 'imagen',\n  archivo_url:        $('Subir a Drive').first().json.fileUrl || null,\n  drive_url:          $('Subir a Drive').first().json.fileUrl || null,\n  es_duplicada:       false\n}) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Gmail - Nuevos emails":   { "main": [[{ "node": "Extraer adjunto",          "type": "main", "index": 0 }]] },
+    "Extraer adjunto":         { "main": [[{ "node": "¿Adjunto válido?",         "type": "main", "index": 0 }]] },
+    "¿Adjunto válido?":        { "main": [
+      [{ "node": "Preparar clasificación",  "type": "main", "index": 0 }],
+      []
+    ]},
+    "Preparar clasificación":  { "main": [[{ "node": "Clasificar con Claude",   "type": "main", "index": 0 }]] },
+    "Clasificar con Claude":   { "main": [[{ "node": "¿Es factura?",            "type": "main", "index": 0 }]] },
+    "¿Es factura?":            { "main": [
+      [{ "node": "Preparar extracción",     "type": "main", "index": 0 }],
+      []
+    ]},
+    "Preparar extracción":     { "main": [[{ "node": "Extraer datos con Claude","type": "main", "index": 0 }]] },
+    "Extraer datos con Claude":{ "main": [[{ "node": "Parsear y preparar Drive","type": "main", "index": 0 }]] },
+    "Parsear y preparar Drive":{ "main": [[{ "node": "Subir a Drive",           "type": "main", "index": 0 }]] },
+    "Subir a Drive":           { "main": [[{ "node": "Guardar en Supabase",     "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": []
+}
